@@ -20,9 +20,9 @@
 #ifndef CSPDIFRX_H_
 #define CSPDIFRX_H_
 
-#include "cSPDIFRX_Handler.h"
-#include "cTIM_Handler.h"
 #include "main.h"
+#include "cDeviceHandler.h"  // Base class for callback handling
+#include "cTIM_Handler.h"
 #include "cMixer.h"
 
 namespace Dad {
@@ -51,6 +51,7 @@ enum class eEtatSPDif {
 // `cSPDIFRX_Handler` for handling S/PDIF DMA-related callbacks, and from
 // `cTIM_Handler` for managing timer interrupts.
 //
+DECLARE_DEVICE_RXHANDLE(SPDIFRX_HandleTypeDef, cSPDIFRX_Handler, SPDIF_RX);
 class cSPDIF_RX : public cSPDIFRX_Handler, cTIM_Handler {
 public:
 
@@ -78,7 +79,7 @@ public:
     //
     // Called when the complete buffer is received via DMA.
     //
-    virtual void onReceiveRxComplete() override {
+    virtual void onReceiveComplete_SPDIF_RX() override {
        m_pMixer->pushSamples2(&m_Buffer[RX_BUFFER_SIZE]);
         m_CtCallBack++;  // Increment callback counter
     }
@@ -88,7 +89,7 @@ public:
     //
     // Called when half of the buffer is filled via DMA.
     //
-    virtual void onReceiveRxHalfComplete() override {
+    virtual void onReceiveHalfComplete_SPDIF_RX() override {
     	m_pMixer->pushSamples2(m_Buffer);
         m_CtCallBack++;  // Increment callback counter
     }

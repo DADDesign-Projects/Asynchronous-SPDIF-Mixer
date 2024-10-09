@@ -71,29 +71,29 @@ void cSPDIF_RX::onPeriodElapsed() {
     switch (m_EtatSPDif) {
     // stop state
     case eEtatSPDif::stop:
-    	HAL_DMA_Abort_IT(m_hSPDIFRXMod.hSPDIFRX.hdmaDrRx);      	// Abort DMA reception
-        __HAL_SPDIFRX_IDLE(&m_hSPDIFRXMod.hSPDIFRX);              	// Set SPDIFRX to idle state
-        m_EtatSPDif = eEtatSPDif::inactive;  						// Move to the inactive state
+    	HAL_DMA_Abort_IT(m_phDevice->hdmaDrRx);      	// Abort DMA reception
+        __HAL_SPDIFRX_IDLE(m_phDevice);              	// Set SPDIFRX to idle state
+        m_EtatSPDif = eEtatSPDif::inactive;  			// Move to the inactive state
         break;
 
     // stop state
     case eEtatSPDif::inactive:
-        break;														// Nothing
+        break;											// Nothing
 
     // Initialise state: Reset the S/PDIF receiver and prepare for synchronization
     case eEtatSPDif::init:
-    	HAL_DMA_Abort_IT(m_hSPDIFRXMod.hSPDIFRX.hdmaDrRx);      	// Abort DMA reception
-        __HAL_SPDIFRX_IDLE(&m_hSPDIFRXMod.hSPDIFRX);              	// Set SPDIFRX to idle state
-        m_hSPDIFRXMod.hSPDIFRX.State = HAL_SPDIFRX_STATE_READY; 	// Reset SPDIFRX state
-        __HAL_SPDIFRX_SYNC(&m_hSPDIFRXMod.hSPDIFRX);              	// Initiate synchronization
-        m_EtatSPDif = eEtatSPDif::synchro;  						// Move to the synchro state
+    	HAL_DMA_Abort_IT(m_phDevice->hdmaDrRx);      	// Abort DMA reception
+        __HAL_SPDIFRX_IDLE(m_phDevice);              	// Set SPDIFRX to idle state
+        m_phDevice->State = HAL_SPDIFRX_STATE_READY; 	// Reset SPDIFRX state
+        __HAL_SPDIFRX_SYNC(m_phDevice);              	// Initiate synchronization
+        m_EtatSPDif = eEtatSPDif::synchro;  	    	// Move to the synchro state
         break;
 
     // synchro state: Wait for synchronization with the incoming S/PDIF signal
     case eEtatSPDif::synchro: // synchro state: Wait for synchronization with the incoming S/PDIF signal
-        if (__HAL_SPDIFRX_GET_FLAG(&m_hSPDIFRXMod.hSPDIFRX, SPDIFRX_FLAG_SYNCD)) {
+        if (__HAL_SPDIFRX_GET_FLAG(m_phDevice, SPDIFRX_FLAG_SYNCD)) {
             // If synchronization is detected, start DMA reception
-            HAL_SPDIFRX_ReceiveDataFlow_DMA(&m_hSPDIFRXMod.hSPDIFRX, (uint32_t*)m_Buffer, RX_BUFFER_SIZE * 2);
+            HAL_SPDIFRX_ReceiveDataFlow_DMA(m_phDevice, (uint32_t*)m_Buffer, RX_BUFFER_SIZE * 2);
 
             // Calculate the sample rate of the incoming S/PDIF stream
             CalcSampleRate();
@@ -108,7 +108,7 @@ void cSPDIF_RX::onPeriodElapsed() {
 
     // run state: Monitor the S/PDIF synchronization and handle errors
     case eEtatSPDif::run:
-        uint32_t Err = (m_hSPDIFRXMod.hSPDIFRX.Instance->SR) & (SPDIFRX_FLAG_TERR | SPDIFRX_FLAG_FERR | SPDIFRX_FLAG_SERR);
+        uint32_t Err = (m_phDevice->Instance->SR) & (SPDIFRX_FLAG_TERR | SPDIFRX_FLAG_FERR | SPDIFRX_FLAG_SERR);
         if (Err != 0) {
             // If any error flags are set, reset to stop state
             m_EtatSPDif = eEtatSPDif::init;
@@ -127,7 +127,7 @@ void cSPDIF_RX::onPeriodElapsed() {
 //
 void cSPDIF_RX::CalcSampleRate() {
     // Calculate the sample rate based on the received S/PDIF clock data
-    uint32_t SampleRate = (m_Freq_SPDiff_Clk * 5) / ((((m_hSPDIFRXMod.hSPDIFRX.Instance->SR) >> 16) & 0xEFFF) * 64);
+    uint32_t SampleRate = (m_Freq_SPDiff_Clk * 5) / ((((m_phDevice->Instance->SR) >> 16) & 0xEFFF) * 64);
 
     // Determine the closest standard sample rate
     if (SampleRate > 190000) {
