@@ -1,7 +1,7 @@
 //******************************************************************************
 // Devices
 //
-#include "cSAI_WM8805_RX.h"
+#include "cSAI_DIR9001_RX.h"
 #include "cSAI_SPDIF_TX.h"
 #include "cSPDIF_RX.h"
 

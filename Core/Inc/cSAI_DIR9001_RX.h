@@ -1,5 +1,5 @@
 //******************************************************************************
-// cSAI_WM8805_RX.h
+// cSAI_DIR9001_RX.h
 //
 // This file defines a class to handle WM8805 reception using the SAI
 // interface. It inherits from `cDeviceHandler` to manage callbacks for audio
@@ -16,18 +16,18 @@
 namespace Dad {
 
 //***************************************************************************
-// Class cSAI_WM8805_RX
+// Class cSAI_DIR9001_RX
 //
 // This class handles the WM8805 interface in reception mode using the SAI
 // (Serial Audio Interface) of the STM32. It provides initialization,
 // starting and stopping of reception, and callback handling for received data.
 DECLARE_DEVICE_HANDLE(SAI_HandleTypeDef, cSAIA4_Handler, SAIA4)
-class cSAI_WM8805_RX : public cSAIA4_Handler{
+class cSAI_DIR9001_RX : public cSAIA4_Handler{
 public:
     //---------------------------------------------------------------------
 	// Constructor / Destructor
-	cSAI_WM8805_RX() {}
-	virtual ~cSAI_WM8805_RX() {}
+	cSAI_DIR9001_RX() {}
+	virtual ~cSAI_DIR9001_RX() {}
 
     //---------------------------------------------------------------------
 	// Initializes the class and the SAI interface.
@@ -39,9 +39,9 @@ public:
 		cSAIA4_Handler::Init(phSAI);  // Call base class initialization (register callbacks)
 
 		// WM8805_RESET
-		HAL_GPIO_WritePin(WM8805_RESET_GPIO_Port, WM8805_RESET_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(DIR9001_RESET_GPIO_Port, DIR9001_RESET_Pin, GPIO_PIN_RESET);
 		HAL_Delay(300);
-		HAL_GPIO_WritePin(WM8805_RESET_GPIO_Port, WM8805_RESET_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(DIR9001_RESET_GPIO_Port, DIR9001_RESET_Pin, GPIO_PIN_SET);
 	}
 
     //---------------------------------------------------------------------
@@ -74,22 +74,22 @@ protected:
     // reception callbacks for SAI.
     //
     virtual void onReceiveComplete_SAIA4() override {
-    	GPIO_PinState UNLOCK = HAL_GPIO_ReadPin(UNLOCK_GPIO_Port, UNLOCK_Pin);
+    	GPIO_PinState NO_AUDIO = HAL_GPIO_ReadPin(NO_AUDIO_GPIO_Port, NO_AUDIO_Pin);
     	GPIO_PinState TRANS_ERR = HAL_GPIO_ReadPin(TRANS_ERR_GPIO_Port, TRANS_ERR_Pin);
     	//GPIO_PinState NO_AUDIO = HAL_GPIO_ReadPin(NO_AUDIO_GPIO_Port, NO_AUDIO_Pin);
     	//GPIO_PinState GEN_FLAG = HAL_GPIO_ReadPin(GEN_FLAG_GPIO_Port, GEN_FLAG_Pin);
-    	if((UNLOCK | TRANS_ERR) == 0){
+    	if((NO_AUDIO | TRANS_ERR) == 0){
     		m_pMixer->pushSamples1(&m_pBuffer[RX_BUFFER_SIZE]);
     	}
     	m_CtCallBack++;
     }
 
     virtual void onReceiveHalfComplete_SAIA4() override {
-    	GPIO_PinState UNLOCK = HAL_GPIO_ReadPin(UNLOCK_GPIO_Port, UNLOCK_Pin);
+    	GPIO_PinState NO_AUDIO = HAL_GPIO_ReadPin(NO_AUDIO_GPIO_Port, NO_AUDIO_Pin);
     	GPIO_PinState TRANS_ERR = HAL_GPIO_ReadPin(TRANS_ERR_GPIO_Port, TRANS_ERR_Pin);
     	//GPIO_PinState NO_AUDIO = HAL_GPIO_ReadPin(NO_AUDIO_GPIO_Port, NO_AUDIO_Pin);
     	//GPIO_PinState GEN_FLAG = HAL_GPIO_ReadPin(GEN_FLAG_GPIO_Port, GEN_FLAG_Pin);
-    	if((UNLOCK | TRANS_ERR) == 0){
+    	if((NO_AUDIO | TRANS_ERR) == 0){
     		m_pMixer->pushSamples1(m_pBuffer);
     	}
     	m_CtCallBack++;

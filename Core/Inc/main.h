@@ -59,14 +59,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin GPIO_PIN_3
 #define LED_GPIO_Port GPIOE
-#define WM8805_RESET_Pin GPIO_PIN_3
-#define WM8805_RESET_GPIO_Port GPIOC
-#define UNLOCK_Pin GPIO_PIN_1
-#define UNLOCK_GPIO_Port GPIOA
+#define DIR9001_RESET_Pin GPIO_PIN_3
+#define DIR9001_RESET_GPIO_Port GPIOC
 #define NO_AUDIO_Pin GPIO_PIN_3
 #define NO_AUDIO_GPIO_Port GPIOA
-#define GEN_FLAG_Pin GPIO_PIN_7
-#define GEN_FLAG_GPIO_Port GPIOA
 #define TRANS_ERR_Pin GPIO_PIN_5
 #define TRANS_ERR_GPIO_Port GPIOC
 

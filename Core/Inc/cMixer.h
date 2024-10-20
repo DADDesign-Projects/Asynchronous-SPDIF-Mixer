@@ -174,6 +174,16 @@ public:
     }
 
     //---------------------------------------------------------------------
+    // GetSampleRatex
+    eSampleRate GetSampleRate1(){
+    	return m_SampleRate1;
+    }
+
+    eSampleRate GetSampleRate2(){
+    	return m_SampleRate2;
+    }
+
+    //---------------------------------------------------------------------
     // pushSamples1
     // Pushes new samples into the first input circular buffer (Buffer 1).
     //

@@ -150,7 +150,7 @@ namespace Dad {
             // Synchronization logic for Buffer 1 based on sample rate
             if (SampleRate != eSampleRate::NoSync) {
                 if (SampleRate == m_SampleRate1) {
-                    if (m_CtSynchro1 >= 1) {
+                    if (m_CtSynchro1 >= 2) {
                         // If synchronized, calculate drift factor
                         if (m_Drif_Factor1 == 0) {
                             m_Drif_Factor1 = BuffIn1.getDate() / (m_DateOut1 + TX_BUFFER_SIZE);  // Initial drift calculation

@@ -24,7 +24,7 @@
 #include "cMixer.h"
 #include "cSAI_SPDIF_TX.h"
 #include "cSPDIF_RX.h"
-#include "cSAI_WM8805_RX.h"
+#include "cSAI_DIR9001_RX.h"
 #include "Debug.h"
 /* USER CODE END Includes */
 
@@ -56,12 +56,12 @@ DMA_HandleTypeDef hdma_spdif_rx_dt;
 TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN PV */
-RAM_D3 int32_t __SAI_WM8805_RX_Buffer[40];
+RAM_D3 int32_t __SAI_DIR9001_RX_Buffer[40];
 
 
 Dad::cMixer 		__Mixer;
 Dad::cSAI_SPDIF_TX 	__SAI_SPDIF_TX;
-Dad::cSAI_WM8805_RX __SAI_WM8805_RX;
+Dad::cSAI_DIR9001_RX __SAI_DIR9001_RX;
 Dad::cSPDIF_RX 		__SPDIFRX;
 
 
@@ -132,11 +132,11 @@ int main(void)
 
   __Mixer.Initialise();
 
-  __SAI_WM8805_RX.Init(&hsai_BlockA4, &__Mixer, __SAI_WM8805_RX_Buffer);
+  __SAI_DIR9001_RX.Init(&hsai_BlockA4, &__Mixer, __SAI_DIR9001_RX_Buffer);
   __SPDIFRX.Init(&hspdif1, &htim6, &__Mixer, 25000000);
   __SAI_SPDIF_TX.Init(&hsai_BlockA1, &__Mixer);
 
-  __SAI_WM8805_RX.StartReceive();
+  __SAI_DIR9001_RX.StartReceive();
   __SPDIFRX.StartReceive();
   __SAI_SPDIF_TX.StartTransmit();
 
@@ -145,13 +145,32 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t Led = 0;
+  uint16_t Time = 1000;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-	  HAL_Delay(500);
+	Time = 1000;
+	if(__Mixer.GetSampleRate1() != Dad::eSampleRate::NoSync){
+		Time = 500;
+	}
+	if(__Mixer.GetSampleRate2() != Dad::eSampleRate::NoSync){
+		Time = 250;
+	}
+	if((__Mixer.GetSampleRate2() != Dad::eSampleRate::NoSync)&&(__Mixer.GetSampleRate2() != Dad::eSampleRate::NoSync)){
+		Time = 125;
+	}
+
+	if(Led == 1){
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+		Led = 0;
+	}else{
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+		Led = 1;
+	}
+	HAL_Delay(Time);
   }
   /* USER CODE END 3 */
 }
@@ -275,7 +294,7 @@ static void MX_SAI4_Init(void)
   hsai_BlockA4.Init.MonoStereoMode = SAI_STEREOMODE;
   hsai_BlockA4.Init.CompandingMode = SAI_NOCOMPANDING;
   hsai_BlockA4.Init.TriState = SAI_OUTPUT_NOTRELEASED;
-  if (HAL_SAI_InitProtocol(&hsai_BlockA4, SAI_I2S_STANDARD, SAI_PROTOCOL_DATASIZE_24BIT, 2) != HAL_OK)
+  if (HAL_SAI_InitProtocol(&hsai_BlockA4, SAI_I2S_MSBJUSTIFIED, SAI_PROTOCOL_DATASIZE_32BIT, 2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -418,7 +437,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(WM8805_RESET_GPIO_Port, WM8805_RESET_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(DIR9001_RESET_GPIO_Port, DIR9001_RESET_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -427,18 +446,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : WM8805_RESET_Pin */
-  GPIO_InitStruct.Pin = WM8805_RESET_Pin;
+  /*Configure GPIO pin : DIR9001_RESET_Pin */
+  GPIO_InitStruct.Pin = DIR9001_RESET_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(WM8805_RESET_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(DIR9001_RESET_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : UNLOCK_Pin NO_AUDIO_Pin GEN_FLAG_Pin */
-  GPIO_InitStruct.Pin = UNLOCK_Pin|NO_AUDIO_Pin|GEN_FLAG_Pin;
+  /*Configure GPIO pin : NO_AUDIO_Pin */
+  GPIO_InitStruct.Pin = NO_AUDIO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(NO_AUDIO_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : TRANS_ERR_Pin */
   GPIO_InitStruct.Pin = TRANS_ERR_Pin;
