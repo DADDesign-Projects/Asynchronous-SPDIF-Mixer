@@ -150,7 +150,7 @@ namespace Dad {
             // Synchronization logic for Buffer 1 based on sample rate
             if (SampleRate != eSampleRate::NoSync) {
                 if (SampleRate == m_SampleRate1) {
-                    if (m_CtSynchro1 >= 2) {
+                    if (m_CtSynchro1 >= 1) {
                         // If synchronized, calculate drift factor
                         if (m_Drif_Factor1 == 0) {
                             m_Drif_Factor1 = BuffIn1.getDate() / (m_DateOut1 + TX_BUFFER_SIZE);  // Initial drift calculation
@@ -163,7 +163,10 @@ namespace Dad {
                     }
                 } else {
                     m_SampleRate1 = SampleRate;
-                    m_CtSynchro1 = 0;  // Reset synchronization counter
+                    m_CtSynchro1 = 0;     	// Reset synchronization counter
+                    m_Drif_Factor1 = 0;	  	// Reset Drift Factor
+                    BuffIn1.setDate(0);   	// Reset buffer 1 timestamp
+                    m_DateOut1 = 0;       	// Reset output timestamp
                 }
             }
 
@@ -203,7 +206,10 @@ namespace Dad {
                     }
                 } else {
                     m_SampleRate2 = SampleRate;
-                    m_CtSynchro2 = 0;  // Reset synchronization counter
+                    m_CtSynchro2 = 0;  		// Reset synchronization counter
+                    m_Drif_Factor2 = 0;	  	// Reset Drift Factor
+                    BuffIn2.setDate(0);   	// Reset buffer 1 timestamp
+                    m_DateOut2 = 0;       	// Reset output timestamp
                 }
             }
         }
