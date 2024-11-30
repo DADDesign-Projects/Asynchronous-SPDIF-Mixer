@@ -112,6 +112,20 @@ namespace Dad {
     }
 
     //---------------------------------------------------------------------
+    // pushSamples3
+    // Pushes audio samples into the third input buffer (Buffer 2).
+    //
+    // Parameters:
+    //   pSamples - Pointer to the input sample array (interleaved Left/Right).
+    void cMixer::pushSamples3(int32_t* pSamples) {
+        for (int Index = 0; Index < RX_BUFFER_SIZE; Index += 2) {
+            BuffIn3.Push(pSamples);  // Push samples into Buffer 3
+            pSamples += 2;           // Move to the next stereo sample (L/R)
+            m_ctIN3++;               // Increment input sample counter for Buffer 3
+        }
+    }
+
+    //---------------------------------------------------------------------
     // pullSamples
     // Retrieves mixed samples from both input buffers. This function handles
     // the synchronization of the two streams by calculating drift factors
@@ -127,7 +141,7 @@ namespace Dad {
             eSampleRate SampleRate;
             m_ctPull = 0;
 
-            //---------------------------------------------
+            //-------------------------------------------------------------------------------------------------------------------
             // Determine the sample rate and synchronize Buffer 1
             if ((m_ctIN1 < (DELTA_DATE_48000 + RX_BUFFER_SIZE)) && (m_ctIN1 > (DELTA_DATE_48000 - RX_BUFFER_SIZE))) {
                 SampleRate = eSampleRate::SR48000;
@@ -170,7 +184,7 @@ namespace Dad {
                 }
             }
 
-            //---------------------------------------------
+            //-------------------------------------------------------------------------------------------------------------------
             // Determine the sample rate and synchronize Buffer 2 (same logic as Buffer 1)
             if ((m_ctIN2 < (DELTA_DATE_48000 + RX_BUFFER_SIZE)) && (m_ctIN2 > (DELTA_DATE_48000 - RX_BUFFER_SIZE))) {
                 SampleRate = eSampleRate::SR48000;
@@ -212,12 +226,57 @@ namespace Dad {
                     m_DateOut2 = 0;       	// Reset output timestamp
                 }
             }
-        }
 
+			//-------------------------------------------------------------------------------------------------------------------
+			// Determine the sample rate and synchronize Buffer  (same logic as Buffer 1)
+			if ((m_ctIN3 < (DELTA_DATE_48000 + RX_BUFFER_SIZE)) && (m_ctIN3 > (DELTA_DATE_48000 - RX_BUFFER_SIZE))) {
+				SampleRate = eSampleRate::SR48000;
+			} else if ((m_ctIN3 < (DELTA_DATE_44100 + RX_BUFFER_SIZE)) && (m_ctIN3 > (DELTA_DATE_44100 - RX_BUFFER_SIZE))) {
+				SampleRate = eSampleRate::SR44100;
+			} else if ((m_ctIN3 < (DELTA_DATE_96000 + RX_BUFFER_SIZE)) && (m_ctIN3 > (DELTA_DATE_96000 - RX_BUFFER_SIZE))) {
+				SampleRate = eSampleRate::SR96000;
+			} else if ((m_ctIN3 < (DELTA_DATE_32000 + RX_BUFFER_SIZE)) && (m_ctIN3 > (DELTA_DATE_32000 - RX_BUFFER_SIZE))) {
+				SampleRate = eSampleRate::SR32000;
+			} else {
+				SampleRate = eSampleRate::NoSync;
+				m_Drif_Factor3 = 0;
+				m_SampleRate3 = eSampleRate::NoSync;
+				BuffIn3.setDate(0);   // Reset buffer 3 timestamp
+				m_DateOut3 = 0;       // Reset output timestamp
+			}
+
+			m_ctIN3 = 0;
+
+			// Synchronization logic for Buffer 3 (similar to Buffer 1)
+			if (SampleRate != eSampleRate::NoSync) {
+				if (SampleRate == m_SampleRate3) {
+					if (m_CtSynchro3 >= 1) {
+						// If synchronized, calculate drift factor
+						if (m_Drif_Factor3 == 0) {
+							m_Drif_Factor3 = BuffIn3.getDate() / (m_DateOut3 + TX_BUFFER_SIZE);
+						} else {
+							float DeltaFactor = m_Drif_Factor3 - BuffIn3.getDate() / (m_DateOut3 + TX_BUFFER_SIZE);
+							m_Drif_Factor3 -= DeltaFactor / 8;  // Smooth drift correction
+						}
+					} else {
+						m_CtSynchro3++;  // Increment synchronization counter
+					}
+				} else {
+					m_SampleRate3 = SampleRate;
+					m_CtSynchro3 = 0;  		// Reset synchronization counter
+					m_Drif_Factor3 = 0;	  	// Reset Drift Factor
+					BuffIn3.setDate(0);   	// Reset buffer 1 timestamp
+					m_DateOut3 = 0;       	// Reset output timestamp
+				}
+			}
+		}
+
+        //-------------------------------------------------------------------------------------------------------------------
         // Mix and interpolate samples from both buffers
         for (int Index = 0; Index < TX_BUFFER_SIZE; Index += 2) {
             float Sample1[2];  // Temporary buffer for Buffer 1 samples (L/R)
             float Sample2[2];  // Temporary buffer for Buffer 2 samples (L/R)
+            float Sample3[2];  // Temporary buffer for Buffer 3 samples (L/R)
 
             // Pull interpolated samples from Buffer 1
             if (m_Drif_Factor1 != 0) {
@@ -235,9 +294,17 @@ namespace Dad {
                 Sample2[1] = 0;
             }
 
+            // Pull interpolated samples from Buffer 3
+            if (m_Drif_Factor3 != 0) {
+                BuffIn3.Pull(Sample3, (m_DateOut3 * m_Drif_Factor3) - RX_BUFFER_SIZE);
+            } else {
+                Sample3[0] = 0;  // Silence if no valid samples
+                Sample3[1] = 0;
+            }
+
             // Mix the two sets of samples (average the values)
-            pSamples[0] = static_cast<int32_t>((Sample1[0] + Sample2[0]) / CoefNormalizeIntToFloat);  // Left channel
-            pSamples[1] = static_cast<int32_t>((Sample1[1] + Sample2[1]) / CoefNormalizeIntToFloat);  // Right channel
+            pSamples[0] = static_cast<int32_t>((Sample1[0] + Sample2[0] + Sample3[0]) / CoefNormalizeIntToFloat);  // Left channel
+            pSamples[1] = static_cast<int32_t>((Sample1[1] + Sample2[1] + Sample3[0]) / CoefNormalizeIntToFloat);  // Right channel
 
             // Move to the next output sample pair
             pSamples += 2;
@@ -245,6 +312,7 @@ namespace Dad {
             // Increment the output dates for both buffers
             m_DateOut1++;
             m_DateOut2++;
+            m_DateOut3++;
             m_ctPull++;
         }
     }

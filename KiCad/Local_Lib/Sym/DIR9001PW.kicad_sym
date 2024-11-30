@@ -1,0 +1,270 @@
+
+(kicad_symbol_lib (version 20211014) (generator kicad_symbol_editor)
+  (symbol "DIR9001PW" (pin_names (offset 1.016)) (in_bom yes) (on_board yes)
+    (property "Reference" "U" (id 0) (at -12.7 28.94 0.0)
+      (effects (font (size 1.27 1.27)) (justify bottom left))
+    )
+    (property "Value" "DIR9001PW" (id 1) (at -12.7 -31.94 0.0)
+      (effects (font (size 1.27 1.27)) (justify bottom left))
+    )
+    (property "Footprint" "DIR9001PW:SOP65P640X120-28N" (id 2) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "MF" "Texas Instruments" (id 4) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "Description" "\n96kHz Digital Audio Receiver\n" (id 5) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "Package" "TSSOP-28 Texas Instruments" (id 6) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "Price" "None" (id 7) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "SnapEDA_Link" "https://www.snapeda.com/parts/DIR9001PW/Texas+Instruments/view-part/?ref=snap" (id 8) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "MP" "DIR9001PW" (id 9) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "Purchase-URL" "https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=236756&manufacturer=Texas Instruments&part_name=DIR9001PW&search_term=None" (id 10) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "Availability" "In Stock" (id 11) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "Check_prices" "https://www.snapeda.com/parts/DIR9001PW/Texas+Instruments/view-part/?ref=eda" (id 12) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (symbol "DIR9001PW_0_0"
+      (rectangle (start -12.7 -27.94) (end 12.7 27.94)
+        (stroke (width 0.41)) (fill (type background))
+      )
+      (pin input line (at -17.78 17.78 0) (length 5.08)
+        (name "~{RST}"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "21"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 15.24 0) (length 5.08)
+        (name "CKSEL"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "28"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 12.7 0) (length 5.08)
+        (name "FILT"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "22"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 10.16 0) (length 5.08)
+        (name "FMT0"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "25"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 7.62 0) (length 5.08)
+        (name "FMT1"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "26"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 5.08 0) (length 5.08)
+        (name "PSCK0"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "13"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 2.54 0) (length 5.08)
+        (name "PSCK1"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "14"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 3.55271e-15 0) (length 5.08)
+        (name "RSV"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "19"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 -2.54 0) (length 5.08)
+        (name "RXIN"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "20"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -17.78 -5.08 0) (length 5.08)
+        (name "XTI"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "8"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin power_in line (at 17.78 25.4 180.0) (length 5.08)
+        (name "VCC"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "24"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin power_in line (at 17.78 22.86 180.0) (length 5.08)
+        (name "VDD"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "5"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 17.78 180.0) (length 5.08)
+        (name "~{AUDIO}"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "1"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 15.24 180.0) (length 5.08)
+        (name "BCKO"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "11"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 12.7 180.0) (length 5.08)
+        (name "BFRAME"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "18"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output clock (at 17.78 10.16 180.0) (length 5.08)
+        (name "CLKST"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "9"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 7.62 180.0) (length 5.08)
+        (name "COUT"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "15"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 5.08 180.0) (length 5.08)
+        (name "DOUT"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "12"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 2.54 180.0) (length 5.08)
+        (name "EMPH"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "17"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 3.55271e-15 180.0) (length 5.08)
+        (name "ERROR"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "27"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 -2.54 180.0) (length 5.08)
+        (name "FSOUT0"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "2"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 -5.08 180.0) (length 5.08)
+        (name "FSOUT1"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "3"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 -7.62 180.0) (length 5.08)
+        (name "LRCKO"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "10"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 -10.16 180.0) (length 5.08)
+        (name "SCKO"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "4"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 -12.7 180.0) (length 5.08)
+        (name "UOUT"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "16"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin output line (at 17.78 -15.24 180.0) (length 5.08)
+        (name "XTO"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "7"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin power_in line (at 17.78 -22.86 180.0) (length 5.08)
+        (name "DGND"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "6"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin power_in line (at 17.78 -25.4 180.0) (length 5.08)
+        (name "AGND"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "23"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+    )
+  )
+)

@@ -65,7 +65,7 @@
 /* #define HAL_IWDG_MODULE_ENABLED   */
 /* #define HAL_LPTIM_MODULE_ENABLED   */
 /* #define HAL_LTDC_MODULE_ENABLED   */
-/* #define HAL_XSPI_MODULE_ENABLED   */
+#define HAL_QSPI_MODULE_ENABLED
 /* #define HAL_RAMECC_MODULE_ENABLED   */
 /* #define HAL_RNG_MODULE_ENABLED   */
 /* #define HAL_RTC_MODULE_ENABLED   */
@@ -81,7 +81,7 @@
 /* #define HAL_IRDA_MODULE_ENABLED   */
 /* #define HAL_SMARTCARD_MODULE_ENABLED   */
 /* #define HAL_WWDG_MODULE_ENABLED   */
-/* #define HAL_PCD_MODULE_ENABLED   */
+#define HAL_PCD_MODULE_ENABLED
 /* #define HAL_HCD_MODULE_ENABLED   */
 /* #define HAL_DFSDM_MODULE_ENABLED   */
 /* #define HAL_DSI_MODULE_ENABLED   */
@@ -193,7 +193,7 @@
 #define  USE_HAL_HCD_REGISTER_CALLBACKS     0U /* HCD register callback disabled     */
 #define  USE_HAL_GFXMMU_REGISTER_CALLBACKS  0U /* GFXMMU register callback disabled  */
 #define  USE_HAL_HRTIM_REGISTER_CALLBACKS   0U /* HRTIM register callback disabled   */
-#define  USE_HAL_I2C_REGISTER_CALLBACKS     1U /* I2C register callback enabled     */
+#define  USE_HAL_I2C_REGISTER_CALLBACKS     0U /* I2C register callback disabled     */
 #define  USE_HAL_I2S_REGISTER_CALLBACKS     0U /* I2S register callback disabled     */
 #define  USE_HAL_IRDA_REGISTER_CALLBACKS    0U /* IRDA register callback disabled    */
 #define  USE_HAL_JPEG_REGISTER_CALLBACKS    0U /* JPEG register callback disabled    */
@@ -213,7 +213,7 @@
 #define  USE_HAL_SMARTCARD_REGISTER_CALLBACKS  0U /* SMARTCARD register callback disabled */
 #define  USE_HAL_SPDIFRX_REGISTER_CALLBACKS 1U /* SPDIFRX register callback enabled */
 #define  USE_HAL_SMBUS_REGISTER_CALLBACKS   0U /* SMBUS register callback disabled   */
-#define  USE_HAL_SPI_REGISTER_CALLBACKS     1U /* SPI register callback enabled     */
+#define  USE_HAL_SPI_REGISTER_CALLBACKS     0U /* SPI register callback disabled     */
 #define  USE_HAL_SWPMI_REGISTER_CALLBACKS   0U /* SWPMI register callback disabled   */
 #define  USE_HAL_TIM_REGISTER_CALLBACKS     1U /* TIM register callback enabled     */
 #define  USE_HAL_UART_REGISTER_CALLBACKS    0U /* UART register callback disabled    */

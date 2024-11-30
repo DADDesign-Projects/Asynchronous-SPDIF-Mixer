@@ -57,14 +57,30 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define LED_Pin GPIO_PIN_3
-#define LED_GPIO_Port GPIOE
-#define DIR9001_RESET_Pin GPIO_PIN_3
-#define DIR9001_RESET_GPIO_Port GPIOC
-#define NO_AUDIO_Pin GPIO_PIN_3
-#define NO_AUDIO_GPIO_Port GPIOA
-#define TRANS_ERR_Pin GPIO_PIN_5
-#define TRANS_ERR_GPIO_Port GPIOC
+#define EN_D1_Pin GPIO_PIN_12
+#define EN_D1_GPIO_Port GPIOB
+#define EN_D2_Pin GPIO_PIN_13
+#define EN_D2_GPIO_Port GPIOB
+#define EN_D3_Pin GPIO_PIN_14
+#define EN_D3_GPIO_Port GPIOB
+#define LED3_Pin GPIO_PIN_15
+#define LED3_GPIO_Port GPIOB
+#define LED2_Pin GPIO_PIN_8
+#define LED2_GPIO_Port GPIOD
+#define LED1_Pin GPIO_PIN_9
+#define LED1_GPIO_Port GPIOD
+#define NO_AUDIO2_Pin GPIO_PIN_15
+#define NO_AUDIO2_GPIO_Port GPIOD
+#define ERROR2_Pin GPIO_PIN_8
+#define ERROR2_GPIO_Port GPIOC
+#define RESET2_Pin GPIO_PIN_8
+#define RESET2_GPIO_Port GPIOA
+#define RESET1_Pin GPIO_PIN_5
+#define RESET1_GPIO_Port GPIOB
+#define ERROR1_Pin GPIO_PIN_6
+#define ERROR1_GPIO_Port GPIOB
+#define NO_AUDIO1_Pin GPIO_PIN_9
+#define NO_AUDIO1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

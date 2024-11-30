@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * @file      startup_stm32h723xx.s
+  * @file      startup_stm32h743xx.s
   * @author    MCD Application Team
-  * @brief     STM32H723xx Devices vector table for GCC based toolchain.
+  * @brief     STM32H743xx Devices vector table for GCC based toolchain.
   *            This module performs:
   *                - Set the initial SP
   *                - Set the initial PC == Reset_Handler,
@@ -14,7 +14,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2019 STMicroelectronics.
+  * Copyright (c) 2017 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -221,7 +221,7 @@ g_pfnVectors:
   .word     OTG_HS_EP1_IN_IRQHandler          /* USB OTG HS End Point 1 In    */
   .word     OTG_HS_WKUP_IRQHandler            /* USB OTG HS Wakeup through EXTI */
   .word     OTG_HS_IRQHandler                 /* USB OTG HS                   */
-  .word     DCMI_PSSI_IRQHandler              /* DCMI, PSSI                   */
+  .word     DCMI_IRQHandler                   /* DCMI                         */
   .word     0                                 /* Reserved                     */
   .word     RNG_IRQHandler                    /* Rng                          */
   .word     FPU_IRQHandler                    /* FPU                          */
@@ -234,44 +234,44 @@ g_pfnVectors:
   .word     LTDC_IRQHandler                   /* LTDC                         */
   .word     LTDC_ER_IRQHandler                /* LTDC error                   */
   .word     DMA2D_IRQHandler                  /* DMA2D                        */
-  .word     0                                 /* Reserved                     */
-  .word     OCTOSPI1_IRQHandler               /* OCTOSPI1                     */
+  .word     SAI2_IRQHandler                   /* SAI2                         */
+  .word     QUADSPI_IRQHandler                /* QUADSPI                      */
   .word     LPTIM1_IRQHandler                 /* LPTIM1                       */
   .word     CEC_IRQHandler                    /* HDMI_CEC                     */
   .word     I2C4_EV_IRQHandler                /* I2C4 Event                   */
   .word     I2C4_ER_IRQHandler                /* I2C4 Error                   */
   .word     SPDIF_RX_IRQHandler               /* SPDIF_RX                     */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
+  .word     OTG_FS_EP1_OUT_IRQHandler         /* USB OTG FS End Point 1 Out   */
+  .word     OTG_FS_EP1_IN_IRQHandler          /* USB OTG FS End Point 1 In    */
+  .word     OTG_FS_WKUP_IRQHandler            /* USB OTG FS Wakeup through EXTI */
+  .word     OTG_FS_IRQHandler                 /* USB OTG FS                   */
   .word     DMAMUX1_OVR_IRQHandler            /* DMAMUX1 Overrun interrupt    */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
-  .word     0                                 /* Reserved                     */
-  .word     DFSDM1_FLT0_IRQHandler            /* DFSDM Filter0 Interrupt      */
-  .word     DFSDM1_FLT1_IRQHandler            /* DFSDM Filter1 Interrupt      */
-  .word     DFSDM1_FLT2_IRQHandler            /* DFSDM Filter2 Interrupt      */
-  .word     DFSDM1_FLT3_IRQHandler            /* DFSDM Filter3 Interrupt      */
-  .word     0                                 /* Reserved                     */
+  .word     HRTIM1_Master_IRQHandler          /* HRTIM Master Timer global Interrupt */
+  .word     HRTIM1_TIMA_IRQHandler            /* HRTIM Timer A global Interrupt */
+  .word     HRTIM1_TIMB_IRQHandler            /* HRTIM Timer B global Interrupt */
+  .word     HRTIM1_TIMC_IRQHandler            /* HRTIM Timer C global Interrupt */
+  .word     HRTIM1_TIMD_IRQHandler            /* HRTIM Timer D global Interrupt */
+  .word     HRTIM1_TIME_IRQHandler            /* HRTIM Timer E global Interrupt */
+  .word     HRTIM1_FLT_IRQHandler             /* HRTIM Fault global Interrupt   */
+  .word     DFSDM1_FLT0_IRQHandler            /* DFSDM Filter0 Interrupt        */
+  .word     DFSDM1_FLT1_IRQHandler            /* DFSDM Filter1 Interrupt        */
+  .word     DFSDM1_FLT2_IRQHandler            /* DFSDM Filter2 Interrupt        */
+  .word     DFSDM1_FLT3_IRQHandler            /* DFSDM Filter3 Interrupt        */
+  .word     SAI3_IRQHandler                   /* SAI3 global Interrupt          */
   .word     SWPMI1_IRQHandler                 /* Serial Wire Interface 1 global interrupt */
-  .word     TIM15_IRQHandler                  /* TIM15 global Interrupt          */
-  .word     TIM16_IRQHandler                  /* TIM16 global Interrupt          */
-  .word     TIM17_IRQHandler                  /* TIM17 global Interrupt          */
-  .word     MDIOS_WKUP_IRQHandler             /* MDIOS Wakeup  Interrupt         */
-  .word     MDIOS_IRQHandler                  /* MDIOS global Interrupt          */
-  .word     0                                 /* Reserved                        */
-  .word     MDMA_IRQHandler                   /* MDMA global Interrupt           */
-  .word     0                                 /* Reserved                        */
-  .word     SDMMC2_IRQHandler                 /* SDMMC2 global Interrupt         */
-  .word     HSEM1_IRQHandler                  /* HSEM1 global Interrupt          */
-  .word     0                                 /* Reserved                        */
-  .word     ADC3_IRQHandler                   /* ADC3 global Interrupt           */
-  .word     DMAMUX2_OVR_IRQHandler            /* DMAMUX Overrun interrupt        */
+  .word     TIM15_IRQHandler                  /* TIM15 global Interrupt      */
+  .word     TIM16_IRQHandler                  /* TIM16 global Interrupt      */
+  .word     TIM17_IRQHandler                  /* TIM17 global Interrupt      */
+  .word     MDIOS_WKUP_IRQHandler             /* MDIOS Wakeup  Interrupt     */
+  .word     MDIOS_IRQHandler                  /* MDIOS global Interrupt      */
+  .word     JPEG_IRQHandler                   /* JPEG global Interrupt       */
+  .word     MDMA_IRQHandler                   /* MDMA global Interrupt       */
+  .word     0                                 /* Reserved                    */
+  .word     SDMMC2_IRQHandler                 /* SDMMC2 global Interrupt     */
+  .word     HSEM1_IRQHandler                  /* HSEM1 global Interrupt      */
+  .word     0                                 /* Reserved                    */
+  .word     ADC3_IRQHandler                   /* ADC3 global Interrupt       */
+  .word     DMAMUX2_OVR_IRQHandler            /* DMAMUX Overrun interrupt    */
   .word     BDMA_Channel0_IRQHandler          /* BDMA Channel 0 global Interrupt */
   .word     BDMA_Channel1_IRQHandler          /* BDMA Channel 1 global Interrupt */
   .word     BDMA_Channel2_IRQHandler          /* BDMA Channel 2 global Interrupt */
@@ -280,32 +280,19 @@ g_pfnVectors:
   .word     BDMA_Channel5_IRQHandler          /* BDMA Channel 5 global Interrupt */
   .word     BDMA_Channel6_IRQHandler          /* BDMA Channel 6 global Interrupt */
   .word     BDMA_Channel7_IRQHandler          /* BDMA Channel 7 global Interrupt */
-  .word     COMP1_IRQHandler                  /* COMP1 global Interrupt          */
-  .word     LPTIM2_IRQHandler                 /* LP TIM2 global interrupt        */
-  .word     LPTIM3_IRQHandler                 /* LP TIM3 global interrupt        */
-  .word     LPTIM4_IRQHandler                 /* LP TIM4 global interrupt        */
-  .word     LPTIM5_IRQHandler                 /* LP TIM5 global interrupt        */
-  .word     LPUART1_IRQHandler                /* LP UART1 interrupt              */
-  .word     0                                 /* Reserved                        */
+  .word     COMP1_IRQHandler                  /* COMP1 global Interrupt     */
+  .word     LPTIM2_IRQHandler                 /* LP TIM2 global interrupt   */
+  .word     LPTIM3_IRQHandler                 /* LP TIM3 global interrupt   */
+  .word     LPTIM4_IRQHandler                 /* LP TIM4 global interrupt   */
+  .word     LPTIM5_IRQHandler                 /* LP TIM5 global interrupt   */
+  .word     LPUART1_IRQHandler                /* LP UART1 interrupt         */
+  .word     0                                 /* Reserved                   */
   .word     CRS_IRQHandler                    /* Clock Recovery Global Interrupt */
   .word     ECC_IRQHandler                    /* ECC diagnostic Global Interrupt */
-  .word     SAI4_IRQHandler                   /* SAI4 global interrupt           */
-  .word     DTS_IRQHandler                    /* Digital Temperature Sensor  interrupt */
-  .word     0                                 /* Reserved                              */
-  .word     WAKEUP_PIN_IRQHandler             /* Interrupt for all 6 wake-up pins      */
-  .word     OCTOSPI2_IRQHandler               /* OCTOSPI2 Interrupt       */
-  .word     0                                 /* Reserved                 */
-  .word     0                                 /* Reserved                 */
-  .word     FMAC_IRQHandler                   /* FMAC Interrupt           */
-  .word     CORDIC_IRQHandler                 /* CORDIC Interrupt         */
-  .word     UART9_IRQHandler                  /* UART9 Interrupt          */
-  .word     USART10_IRQHandler                /* UART10 Interrupt         */
-  .word     I2C5_EV_IRQHandler                /* I2C5 Event Interrupt     */
-  .word     I2C5_ER_IRQHandler                /* I2C5 Error Interrupt     */
-  .word     FDCAN3_IT0_IRQHandler             /* FDCAN3 interrupt line 0  */
-  .word     FDCAN3_IT1_IRQHandler             /* FDCAN3 interrupt line 1  */
-  .word     TIM23_IRQHandler                  /* TIM23 global interrupt   */
-  .word     TIM24_IRQHandler                  /* TIM24 global interrupt   */
+  .word     SAI4_IRQHandler                   /* SAI4 global interrupt      */
+  .word     0                                 /* Reserved                   */
+  .word     0                                 /* Reserved                   */
+  .word     WAKEUP_PIN_IRQHandler             /* Interrupt for all 6 wake-up pins */
 
   .size  g_pfnVectors, .-g_pfnVectors
 
@@ -562,8 +549,8 @@ g_pfnVectors:
    .weak      OTG_HS_IRQHandler
    .thumb_set OTG_HS_IRQHandler,Default_Handler
 
-   .weak      DCMI_PSSI_IRQHandler
-   .thumb_set DCMI_PSSI_IRQHandler,Default_Handler
+   .weak      DCMI_IRQHandler
+   .thumb_set DCMI_IRQHandler,Default_Handler
 
    .weak      RNG_IRQHandler
    .thumb_set RNG_IRQHandler,Default_Handler
@@ -598,8 +585,11 @@ g_pfnVectors:
    .weak      DMA2D_IRQHandler
    .thumb_set DMA2D_IRQHandler,Default_Handler
 
-   .weak      OCTOSPI1_IRQHandler
-   .thumb_set OCTOSPI1_IRQHandler,Default_Handler
+   .weak      SAI2_IRQHandler
+   .thumb_set SAI2_IRQHandler,Default_Handler
+
+   .weak      QUADSPI_IRQHandler
+   .thumb_set QUADSPI_IRQHandler,Default_Handler
 
    .weak      LPTIM1_IRQHandler
    .thumb_set LPTIM1_IRQHandler,Default_Handler
@@ -616,8 +606,41 @@ g_pfnVectors:
    .weak      SPDIF_RX_IRQHandler
    .thumb_set SPDIF_RX_IRQHandler,Default_Handler
 
+   .weak      OTG_FS_EP1_OUT_IRQHandler
+   .thumb_set OTG_FS_EP1_OUT_IRQHandler,Default_Handler
+
+   .weak      OTG_FS_EP1_IN_IRQHandler
+   .thumb_set OTG_FS_EP1_IN_IRQHandler,Default_Handler
+
+   .weak      OTG_FS_WKUP_IRQHandler
+   .thumb_set OTG_FS_WKUP_IRQHandler,Default_Handler
+
+   .weak      OTG_FS_IRQHandler
+   .thumb_set OTG_FS_IRQHandler,Default_Handler
+
    .weak      DMAMUX1_OVR_IRQHandler
    .thumb_set DMAMUX1_OVR_IRQHandler,Default_Handler
+
+   .weak      HRTIM1_Master_IRQHandler
+   .thumb_set HRTIM1_Master_IRQHandler,Default_Handler
+
+   .weak      HRTIM1_TIMA_IRQHandler
+   .thumb_set HRTIM1_TIMA_IRQHandler,Default_Handler
+
+   .weak      HRTIM1_TIMB_IRQHandler
+   .thumb_set HRTIM1_TIMB_IRQHandler,Default_Handler
+
+   .weak      HRTIM1_TIMC_IRQHandler
+   .thumb_set HRTIM1_TIMC_IRQHandler,Default_Handler
+
+   .weak      HRTIM1_TIMD_IRQHandler
+   .thumb_set HRTIM1_TIMD_IRQHandler,Default_Handler
+
+   .weak      HRTIM1_TIME_IRQHandler
+   .thumb_set HRTIM1_TIME_IRQHandler,Default_Handler
+
+   .weak      HRTIM1_FLT_IRQHandler
+   .thumb_set HRTIM1_FLT_IRQHandler,Default_Handler
 
    .weak      DFSDM1_FLT0_IRQHandler
    .thumb_set DFSDM1_FLT0_IRQHandler,Default_Handler
@@ -630,6 +653,9 @@ g_pfnVectors:
 
    .weak      DFSDM1_FLT3_IRQHandler
    .thumb_set DFSDM1_FLT3_IRQHandler,Default_Handler
+
+   .weak      SAI3_IRQHandler
+   .thumb_set SAI3_IRQHandler,Default_Handler
 
    .weak      SWPMI1_IRQHandler
    .thumb_set SWPMI1_IRQHandler,Default_Handler
@@ -648,6 +674,9 @@ g_pfnVectors:
 
    .weak      MDIOS_IRQHandler
    .thumb_set MDIOS_IRQHandler,Default_Handler
+
+   .weak      JPEG_IRQHandler
+   .thumb_set JPEG_IRQHandler,Default_Handler
 
    .weak      MDMA_IRQHandler
    .thumb_set MDMA_IRQHandler,Default_Handler
@@ -715,43 +744,7 @@ g_pfnVectors:
    .weak      SAI4_IRQHandler
    .thumb_set SAI4_IRQHandler,Default_Handler
 
-   .weak      DTS_IRQHandler
-   .thumb_set DTS_IRQHandler,Default_Handler
-
    .weak      WAKEUP_PIN_IRQHandler
    .thumb_set WAKEUP_PIN_IRQHandler,Default_Handler
-
-   .weak      OCTOSPI2_IRQHandler
-   .thumb_set OCTOSPI2_IRQHandler,Default_Handler
-
-   .weak      FMAC_IRQHandler
-   .thumb_set FMAC_IRQHandler,Default_Handler
-
-   .weak      CORDIC_IRQHandler
-   .thumb_set CORDIC_IRQHandler,Default_Handler
-
-   .weak      UART9_IRQHandler
-   .thumb_set UART9_IRQHandler,Default_Handler
-
-   .weak      USART10_IRQHandler
-   .thumb_set USART10_IRQHandler,Default_Handler
-
-   .weak      I2C5_EV_IRQHandler
-   .thumb_set I2C5_EV_IRQHandler,Default_Handler
-
-   .weak      I2C5_ER_IRQHandler
-   .thumb_set I2C5_ER_IRQHandler,Default_Handler
-
-   .weak      FDCAN3_IT0_IRQHandler
-   .thumb_set FDCAN3_IT0_IRQHandler,Default_Handler
-
-   .weak      FDCAN3_IT1_IRQHandler
-   .thumb_set FDCAN3_IT1_IRQHandler,Default_Handler
-
-   .weak      TIM23_IRQHandler
-   .thumb_set TIM23_IRQHandler,Default_Handler
-
-   .weak      TIM24_IRQHandler
-   .thumb_set TIM24_IRQHandler,Default_Handler
 
 

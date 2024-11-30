@@ -1,0 +1,163 @@
+(kicad_sch
+	(version 20231120)
+	(generator "eeschema")
+	(generator_version "8.0")
+	(uuid "012896db-454f-4b94-9d4f-ac7c9d5bfde1")
+	(paper "A4")
+	(title_block
+		(title "S/PDIF ASYNCHRONOUS MIXER")
+		(date "2024-10-27")
+		(rev "A")
+		(company "DAD Design")
+	)
+	(lib_symbols)
+	(text "POWER"
+		(exclude_from_sim no)
+		(at 200.66 54.61 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+		)
+		(uuid "218739ca-4728-42c6-b92f-c1096b406982")
+	)
+	(text "S/PDIF Interface"
+		(exclude_from_sim no)
+		(at 78.74 135.89 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+		)
+		(uuid "3767ab92-612c-46cd-8401-91bf758d77bb")
+	)
+	(text "STM32 I/O"
+		(exclude_from_sim no)
+		(at 78.74 54.61 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+		)
+		(uuid "c9c7e8c9-6e1c-4cc9-827b-6d289253e0f5")
+	)
+	(sheet
+		(at 158.75 29.21)
+		(size 85.09 53.34)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "21dc3cae-ce98-47e6-8ee2-15143044784c")
+		(property "Sheetname" "Power"
+			(at 158.75 28.4984 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "Alims.kicad_sch"
+			(at 158.75 83.1346 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "MIxer_SPDIF_V1.0"
+				(path "/012896db-454f-4b94-9d4f-ac7c9d5bfde1"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 36.83 106.68)
+		(size 86.36 55.88)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "67fdbd7f-127e-4772-b3b3-61d2d92cf7bf")
+		(property "Sheetname" "SPDIF"
+			(at 36.83 105.9684 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "SPDIF.kicad_sch"
+			(at 36.83 163.1446 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "MIxer_SPDIF_V1.0"
+				(path "/012896db-454f-4b94-9d4f-ac7c9d5bfde1"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 34.29 27.94)
+		(size 90.17 57.15)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "e06fb106-2f43-4b5f-ad75-5e72d8a263fc")
+		(property "Sheetname" "STM32"
+			(at 34.29 27.2284 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "STM32.kicad_sch"
+			(at 34.29 85.6746 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "MIxer_SPDIF_V1.0"
+				(path "/012896db-454f-4b94-9d4f-ac7c9d5bfde1"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+)

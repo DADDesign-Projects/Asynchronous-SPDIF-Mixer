@@ -155,22 +155,28 @@ public:
     void Initialise() {
         BuffIn1.Clear();
         BuffIn2.Clear();
+        BuffIn3.Clear();
 
         m_Drif_Factor1 = 0;
         m_Drif_Factor2 = 0;
+        m_Drif_Factor3 = 0;
 
         m_ctPull = 0;
         m_ctIN1 = 0;
         m_ctIN2 = 0;
+        m_ctIN3 = 0;
 
         m_CtSynchro1 = 0;
         m_CtSynchro2 = 0;
+        m_CtSynchro3 = 0;
 
         m_DateOut1 = 0;
         m_DateOut2 = 0;
+        m_DateOut3 = 0;
 
         m_SampleRate1 = eSampleRate::NoSync;
         m_SampleRate2 = eSampleRate::NoSync;
+        m_SampleRate3 = eSampleRate::NoSync;
     }
 
     //---------------------------------------------------------------------
@@ -183,6 +189,9 @@ public:
     	return m_SampleRate2;
     }
 
+    eSampleRate GetSampleRate3(){
+    	return m_SampleRate3;
+    }
     //---------------------------------------------------------------------
     // pushSamples1
     // Pushes new samples into the first input circular buffer (Buffer 1).
@@ -200,6 +209,14 @@ public:
     void pushSamples2(int32_t* pSamples);
 
     //---------------------------------------------------------------------
+    // pushSamples3
+    // Pushes new samples into the third input circular buffer (Buffer 1).
+    //
+    // Parameters:
+    //   pSamples - Pointer to the input sample array (interleaved L/R).
+    void pushSamples3(int32_t* pSamples);
+
+    //---------------------------------------------------------------------
     // pullSamples
     // Retrieves mixed and synchronized samples from both input buffers,
     // compensating for drift and ensuring a smooth output. The samples
@@ -212,22 +229,28 @@ public:
 private:
     cCircularBuff BuffIn1;  // Circular buffer for the first input stream
     cCircularBuff BuffIn2;  // Circular buffer for the second input stream
+    cCircularBuff BuffIn3;  // Circular buffer for the second input stream
 
     float m_Drif_Factor1;   // Drift compensation factor for the first stream
     float m_Drif_Factor2;   // Drift compensation factor for the second stream
+    float m_Drif_Factor3;   // Drift compensation factor for the second stream
 
     uint16_t m_ctPull;      // Counter for tracking pull operations
     uint16_t m_ctIN1;       // Counter for input 1 samples
     uint16_t m_ctIN2;       // Counter for input 2 samples
+    uint16_t m_ctIN3;       // Counter for input 2 samples
 
     uint8_t m_CtSynchro1;   // Synchronization counter for the first stream
     uint8_t m_CtSynchro2;   // Synchronization counter for the second stream
+    uint8_t m_CtSynchro3;   // Synchronization counter for the second stream
 
     double m_DateOut1;      // Output timestamp for the first stream
     double m_DateOut2;      // Output timestamp for the second stream
+    double m_DateOut3;      // Output timestamp for the second stream
 
     eSampleRate m_SampleRate1;  // Detected sample rate for the first stream
     eSampleRate m_SampleRate2;  // Detected sample rate for the second stream
+    eSampleRate m_SampleRate3;  // Detected sample rate for the third stream
 };
 
 } /* namespace Dad */

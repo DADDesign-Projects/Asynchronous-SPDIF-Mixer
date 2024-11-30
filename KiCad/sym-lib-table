@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "Local")(type "KiCad")(uri "${KIPRJMOD}/Local_Lib/Sym/2024-10-25_13-26-10.kicad_sym")(options "")(descr ""))
+  (lib (name "STM32H743VIT6")(type "KiCad")(uri "${KIPRJMOD}/Local_Lib/Sym/STM32H743VIT6.kicad_sym")(options "")(descr ""))
+)

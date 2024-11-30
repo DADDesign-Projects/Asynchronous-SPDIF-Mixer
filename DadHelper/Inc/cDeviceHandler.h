@@ -13,7 +13,6 @@
 /* This class provides a framework for handling device communication using the HAL library.*/\
 /* It includes callback mechanisms to be implemented by derived classes.*/\
 \
-template<class DeviceTypeDef>\
 class CallbackName##Handler {\
 public:\
     /*---------------------------------------------------------------------*/\
@@ -52,7 +51,7 @@ protected:\
     /* Member Variables*/\
 \
 	DeviceTypeDef*	m_phDevice;\
-	static CallbackName##Handler<DeviceTypeDef>* m_pThis;\
+	static CallbackName##Handler* m_pThis;\
 \
     /*--------------------------------------------------------------------*/\
     /* Static callback functions called by HAL.*/\
@@ -95,13 +94,9 @@ protected:\
         while(1);\
     }\
 };\
-typedef Dad::CallbackName##Handler<DeviceTypeDef> ClassName;
+typedef Dad::CallbackName##Handler ClassName;
 
-#define INSTANTIATE_DEVICE_HANDLE2(DeviceTypeDef, CallbackName) template<> CallbackName##Handler<DeviceTypeDef>* CallbackName##Handler<DeviceTypeDef>::m_pThis = nullptr;
-
-#define INSTANTIATE_DEVICE_HANDLE(ClassName) template<> ClassName* ClassName::m_pThis = nullptr;
-
-
+#define INSTANTIATE_DEVICE_HANDLE(ClassName) ClassName* ClassName::m_pThis = nullptr;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define DECLARE_DEVICE_RXHANDLE(DeviceTypeDef, ClassName, CallbackName)\
@@ -109,7 +104,6 @@ typedef Dad::CallbackName##Handler<DeviceTypeDef> ClassName;
 /* This class provides a framework for handling device communication using the HAL library.*/\
 /* It includes callback mechanisms to be implemented by derived classes.*/\
 \
-template<class DeviceTypeDef>\
 class CallbackName##RxHandler {\
 public:\
     /*---------------------------------------------------------------------*/\
@@ -142,7 +136,7 @@ protected:\
     /* Member Variables*/\
 \
 	DeviceTypeDef*	m_phDevice;\
-	static CallbackName##RxHandler<DeviceTypeDef>* m_pThis;\
+	static CallbackName##RxHandler* m_pThis;\
 \
     /*--------------------------------------------------------------------*/\
     /* Static callback functions called by HAL.*/\
@@ -174,11 +168,8 @@ protected:\
         while(1);\
     }\
 };\
-typedef CallbackName##RxHandler<DeviceTypeDef> ClassName;\
+typedef CallbackName##RxHandler ClassName;\
 
-#define INSTANTIATE_DEVICE_RXHANDLE2(DeviceTypeDef, CallbackName) template<> Dad::CallbackName##RxHandler<DeviceTypeDef>* Dad::CallbackName##RxHandler<DeviceTypeDef>::m_pThis = nullptr;
-
-#define INSTANTIATE_DEVICE_RXHANDLE(ClassName) template<> ClassName* ClassName::m_pThis = nullptr;
-
+#define INSTANTIATE_DEVICE_RXHANDLE(ClassName) ClassName* ClassName::m_pThis = nullptr;
 
 #endif /* CDEVICE_HANDLER_H_ */
