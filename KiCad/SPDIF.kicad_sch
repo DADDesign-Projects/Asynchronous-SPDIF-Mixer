@@ -6051,6 +6051,50 @@
 		)
 		(uuid "fd80b4f6-8487-4c98-ac1b-2cfee4217dcc")
 	)
+	(rectangle
+		(start 128.27 57.15)
+		(end 189.23 72.39)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(fill
+			(type none)
+		)
+		(uuid 06790d12-6d27-4a43-a31d-b51ba5d7768d)
+	)
+	(rectangle
+		(start 124.46 123.19)
+		(end 181.61 143.51)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(fill
+			(type none)
+		)
+		(uuid 2ce15887-6716-4d13-920d-5ca3b608db45)
+	)
+	(text "C37 or C42\nC41 or C38"
+		(exclude_from_sim no)
+		(at 173.99 127 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "a462da71-fb03-419b-bdbc-f3d76d112a9b")
+	)
+	(text "C31 or C43\nC44 or C32"
+		(exclude_from_sim no)
+		(at 181.61 60.96 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "b5999612-a634-4407-a2f7-4b24e26d1565")
+	)
 	(global_label "SPDIF-In1"
 		(shape output)
 		(at 181.61 85.09 180)

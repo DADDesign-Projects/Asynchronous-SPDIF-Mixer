@@ -154,9 +154,10 @@ int main(void)
   __SPDIFRX.StartReceive();
   __SAI_SPDIF_TX.StartTransmit();
 
+  uint8_t ctLed = 0;
 
   /* USER CODE END 2 */
-  uint8_t ctLed  = 0;
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -215,11 +216,6 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
-
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
@@ -423,7 +419,7 @@ static void MX_SAI3_Init(void)
   hsai_BlockA3.Init.MonoStereoMode = SAI_STEREOMODE;
   hsai_BlockA3.Init.CompandingMode = SAI_NOCOMPANDING;
   hsai_BlockA3.Init.TriState = SAI_OUTPUT_NOTRELEASED;
-  if (HAL_SAI_InitProtocol(&hsai_BlockA3, SAI_I2S_STANDARD, SAI_PROTOCOL_DATASIZE_32BIT, 2) != HAL_OK)
+  if (HAL_SAI_InitProtocol(&hsai_BlockA3, SAI_I2S_MSBJUSTIFIED, SAI_PROTOCOL_DATASIZE_32BIT, 2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -623,13 +619,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : NO_AUDIO_D2_Pin */
+  /*Configure GPIO pin : NO_AUDIO2_Pin */
   GPIO_InitStruct.Pin = NO_AUDIO2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(NO_AUDIO2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : ERREUR_D2_Pin */
+  /*Configure GPIO pin : ERROR2_Pin */
   GPIO_InitStruct.Pin = ERROR2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
