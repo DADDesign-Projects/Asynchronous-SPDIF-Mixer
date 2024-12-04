@@ -267,7 +267,7 @@ void TIM6_DAC_IRQHandler(void)
   HAL_TIM_IRQHandler(__phTIM6);
   return;
   /* USER CODE END TIM6_DAC_IRQn 0 */
-
+  HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE END TIM6_DAC_IRQn 1 */
