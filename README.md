@@ -1,7 +1,7 @@
 # Asynchronous S/PDIF Mixer
 "Asynchronous S/PDIF Mixer" is a C++ solution designed to synchronize and mix three asynchronous S/PDIF streams into a single S/PDIF output stream at 48kHz. It compensates for drift and uses interpolation for smooth audio transitions, developed for the STM32H743 and built using CubeIDE for real-time audio processing.
 
-![Image1](Images/PCBMixSmall.jpg)
+![Image1](Images/PCBMixSmall.jpg) ![Image1](Images/Mixer.jpg)
 ## Author
 This project is developed by **DAD Design**.
 ## License
