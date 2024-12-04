@@ -170,7 +170,7 @@ namespace Dad {
                             m_Drif_Factor1 = BuffIn1.getDate() / (m_DateOut1 + TX_BUFFER_SIZE);  // Initial drift calculation
                         } else {
                             float DeltaFactor = m_Drif_Factor1 - BuffIn1.getDate() / (m_DateOut1 + TX_BUFFER_SIZE);
-                            m_Drif_Factor1 -= DeltaFactor / 8;  // Smooth drift correction
+                            m_Drif_Factor1 -= DeltaFactor / 7;  // Smooth drift correction
                         }
                     } else {
                         m_CtSynchro1++;  // Increment synchronization counter
@@ -213,7 +213,7 @@ namespace Dad {
                             m_Drif_Factor2 = BuffIn2.getDate() / (m_DateOut2 + TX_BUFFER_SIZE);
                         } else {
                             float DeltaFactor = m_Drif_Factor2 - BuffIn2.getDate() / (m_DateOut2 + TX_BUFFER_SIZE);
-                            m_Drif_Factor2 -= DeltaFactor / 8;  // Smooth drift correction
+                            m_Drif_Factor2 -= DeltaFactor / 7;  // Smooth drift correction
                         }
                     } else {
                         m_CtSynchro2++;  // Increment synchronization counter
@@ -256,7 +256,7 @@ namespace Dad {
 							m_Drif_Factor3 = BuffIn3.getDate() / (m_DateOut3 + TX_BUFFER_SIZE);
 						} else {
 							float DeltaFactor = m_Drif_Factor3 - BuffIn3.getDate() / (m_DateOut3 + TX_BUFFER_SIZE);
-							m_Drif_Factor3 -= DeltaFactor / 8;  // Smooth drift correction
+							m_Drif_Factor3 -= DeltaFactor / 7;  // Smooth drift correction
 						}
 					} else {
 						m_CtSynchro3++;  // Increment synchronization counter
