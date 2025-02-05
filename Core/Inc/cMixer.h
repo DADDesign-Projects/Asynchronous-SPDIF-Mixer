@@ -35,7 +35,7 @@
 #define DELTA_DATE_32000 665    // Delta value for synchronizing 32kHz sample rate
 
 // Coefficient to normalize a 24-bit integer to a floating-point value (-1.0 to +1.0 range)
-constexpr float CoefNormalizeIntToFloat = 1.0f / (float)0xEFFFFF;
+constexpr float CoefNormalizeIntToFloat = 1.0f / (float)0x7FFFFF;
 
 namespace Dad {
 
