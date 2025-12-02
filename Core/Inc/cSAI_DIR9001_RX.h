@@ -12,6 +12,7 @@
 #include "main.h"
 #include "cDeviceHandler.h"  // Base class for callback handling
 #include "cMixer.h"
+#include <cstring>
 
 namespace Dad {
 
@@ -48,7 +49,7 @@ public:
 	// Starts receiving data using DMA.
 	// It initiates the DMA transfer to fill the reception buffer.
 	inline void StartReceive() {
-		memset(m_pBuffer, 0xAA, 400);
+		std::memset(m_pBuffer, 0xAA, 400);
 		HAL_SAI_Receive_DMA(m_phDevice, (uint8_t *)m_pBuffer, RX_BUFFER_SIZE*2);//, 1000);
 	}
 
@@ -129,7 +130,7 @@ public:
 	// Starts receiving data using DMA.
 	// It initiates the DMA transfer to fill the reception buffer.
 	inline void StartReceive() {
-		memset(m_pBuffer, 0xAA, 400);
+		std::memset(m_pBuffer, 0xAA, 400);
 		HAL_SAI_Receive_DMA(m_phDevice, (uint8_t *)m_pBuffer, RX_BUFFER_SIZE*2);//, 1000);
 	}
 

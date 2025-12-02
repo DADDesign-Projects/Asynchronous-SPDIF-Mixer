@@ -1,258 +1,253 @@
-//******************************************************************************
-//* cMixer.h
+//==================================================================================
+//==================================================================================
+// File: cMixer.h
+// Description: Header for 3-channel asynchronous S/PDIF audio mixer with adaptive
+//              drift compensation and sample rate conversion to 48kHz
 //
-// This file defines the cMixer class, designed to synchronize and mix two asynchronous S/PDIF audio streams
-// into a single output S/PDIF stream at a fixed sample rate of 48kHz. The cMixer class utilizes circular buffers
-// to manage incoming audio samples from two different sources, compensating for potential clock drifts between
-// the input streams using interpolation techniques.
-//
-// - cCircularBuff: A helper class that manages a circular buffer of audio samples, providing functionality to
-//   store, retrieve, and interpolate samples over time. It supports operations such as pushing new samples into
-//   the buffer and pulling interpolated samples based on a given date, with automatic wrapping.
-//
-// - cMixer: This class is responsible for handling two input audio streams, synchronizing them to a common
-//   output clock by compensating for drift between the streams. It ensures that both streams are mixed smoothly
-//   through linear interpolation and drift correction. The class supports input sample rates of 96kHz, 48kHz,
-//   44.1kHz, and 32kHz and produces a mixed output at 48kHz.
-//******************************************************************************
+// Copyright (c) 2025 Dad Design.
+//==================================================================================
+//==================================================================================
+#pragma once
 
-#ifndef CMIXER_H_
-#define CMIXER_H_
 #include "main.h"
-#include <stdbool.h>
-#include <string.h>
-#include <math.h>
+#include <algorithm>
 
-#define CIRCULAR_BUFFER_SIZE 200
-#define RX_BUFFER_SIZE  10
-#define TX_BUFFER_SIZE  10
-#define DRIF_CALC_NB_SAMPLES 1000
+// =============================================================================
+// Configuration constants
+// =============================================================================
 
-#define DETA_MAX 30
-#define DELTA_DATE_96000 1995   // Delta value for synchronizing 96kHz sample rate
-#define DELTA_DATE_48000 995    // Delta value for synchronizing 48kHz sample rate
-#define DELTA_DATE_44100 915    // Delta value for synchronizing 44.1kHz sample rate
-#define DELTA_DATE_32000 665    // Delta value for synchronizing 32kHz sample rate
+#define CIRCULAR_BUFFER_SIZE 200      // Size of circular buffer in stereo samples
+#define RX_BUFFER_SIZE 20             // Input buffer size in stereo samples
+#define TX_BUFFER_SIZE 10             // Output buffer size in stereo samples
+#define DRIF_CALC_NB_SAMPLES 1000     // Number of samples between drift calculations
 
-// Coefficient to normalize a 24-bit integer to a floating-point value (-1.0 to +1.0 range)
-constexpr float CoefNormalizeIntToFloat = 1.0f / (float)0x7FFFFF;
+// Sample rate detection deltas (for DRIF_CALC_NB_SAMPLES samples)
+#define DELTA_DATE_96000 1995         // Expected delta for 96kHz
+#define DELTA_DATE_48000 995          // Expected delta for 48kHz
+#define DELTA_DATE_44100 915          // Expected delta for 44.1kHz
+#define DELTA_DATE_41000 855          // Expected delta for 41kHz
+#define DELTA_DATE_32000 665          // Expected delta for 32kHz
+
+// Normalization coefficients for 24-bit to float conversion
+constexpr float COEF_NORMALIZE = 1.0f / 8388607.0f;  // 0x7FFFFF (max 24-bit positive)
+constexpr float COEF_DENORMALIZE = 8388607.0f;       // Inverse for denormalization
 
 namespace Dad {
 
-enum class eSampleRate {
-    SR96000,  // 96kHz sample rate
-    SR48000,  // 48kHz sample rate
-    SR44100,  // 44.1kHz sample rate
-    SR32000,  // 32kHz sample rate
-    NoSync    // No synchronization detected
+// =============================================================================
+// Enumerations
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Supported sample rates
+// -----------------------------------------------------------------------------
+enum class eSampleRate
+{
+    SR32000,    // 32kHz sample rate
+    SR41000,    // 41kHz sample rate
+    SR44100,    // 44.1kHz sample rate
+    SR48000,    // 48kHz sample rate
+    SR96000,    // 96kHz sample rate
+    NoSync      // No synchronization detected
 };
 
-//***************************************************************************
+//**********************************************************************************
 // cCircularBuff
-// Circular buffer class for managing audio samples and providing
-// interpolation when pulling data. It supports storing 24-bit samples
-// as normalized floating-point values and offers smooth transitions
-// between samples by interpolating between buffer positions.
-//
-// This class is used to handle input audio data streams, ensuring that
-// samples are processed in a continuous circular manner and supports
-// efficient retrieval with date-based interpolation.
-//
-class cCircularBuff {
+// Circular buffer with linear interpolation for audio samples
+//**********************************************************************************
+class cCircularBuff
+{
 public:
-    //---------------------------------------------------------------------
+    // =========================================================================
     // Constructor
-    // Initializes the buffer by clearing its contents.
-    cCircularBuff() {
-        Clear();  // Reset buffer pointer and timestamp
+    // -------------------------------------------------------------------------
+    cCircularBuff() { Clear(); }
+
+    // =========================================================================
+    // Public methods
+    // -------------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------
+    // Clears buffer and resets state
+    // -------------------------------------------------------------------------
+    void Clear()
+    {
+        m_pBuffer = m_Buffer;     // Reset buffer pointer to start
+        m_Date = 0.0;             // Reset internal timestamp
     }
 
-    //---------------------------------------------------------------------
-    // Destructor
-    // Cleans up the circular buffer object.
-    ~cCircularBuff() {}
+    // -------------------------------------------------------------------------
+    // Gets current buffer date (timestamp)
+    // -------------------------------------------------------------------------
+    inline double getDate() const { return m_Date; }
 
-    //---------------------------------------------------------------------
-    // Clear
-    // Resets the buffer pointer to the start and the timestamp to zero.
-    void Clear() {
-        m_pBuffer = m_Buffer;  // Set buffer pointer to the start
-        m_Date = 0;            // Reset timestamp
-    }
-
-    //---------------------------------------------------------------------
-    // getDate
-    // Returns the current timestamp of the buffer, which tracks the
-    // sample date for synchronization purposes.
-    inline double getDate() { return m_Date; }
-
-    //---------------------------------------------------------------------
-    // setDate
-    // Sets a new timestamp for the buffer.
-    //
-    // Parameters:
-    //   newDate - New timestamp to set.
+    // -------------------------------------------------------------------------
+    // Sets buffer date (timestamp)
+    // -------------------------------------------------------------------------
     inline void setDate(double newDate) { m_Date = newDate; }
 
-    //---------------------------------------------------------------------
-    // Push
-    // Converts 24-bit signed integer samples into normalized floating-point
-    // values and stores them in the circular buffer. The buffer wraps around
-    // when it reaches the end, ensuring that new samples overwrite the oldest.
-    //
-    // Parameters:
-    //   pSamples - Pointer to an array containing 24-bit audio samples (L, R).
+    // -------------------------------------------------------------------------
+    // Pushes signed 24-bit samples (interleaved L/R)
+    // -------------------------------------------------------------------------
     void Push(int32_t *pSamples);
 
-    //---------------------------------------------------------------------
-    // Pull
-    // Retrieves interpolated samples from the circular buffer based on the
-    // specified date. Interpolation is performed to ensure smooth transitions
-    // between buffer positions, compensating for any potential drift or gaps
-    // in the sample stream.
-    //
-    // Parameters:
-    //   pSamples - Pointer to store the output samples (L, R).
-    //   Date     - The date for which the sample should be retrieved.
-    void Pull(float *pSamples, double Date);
+    // -------------------------------------------------------------------------
+    // Pulls interpolated samples at given date
+    // -------------------------------------------------------------------------
+    void Pull(float *pSamples, double date);
 
 private:
-    float m_Buffer[CIRCULAR_BUFFER_SIZE * 2];  // Buffer storage for interleaved L/R samples
-    float* m_pBuffer;                          // Current write position in the buffer
-    double m_Date;                             // Timestamp tracking the position in the buffer
+    // =========================================================================
+    // Member variables
+    // -------------------------------------------------------------------------
+    float m_Buffer[CIRCULAR_BUFFER_SIZE * 2];  // Stereo interleaved buffer
+    float* m_pBuffer;                          // Current write pointer
+    double m_Date;                             // Internal timestamp
 };
 
-//***************************************************************************
-// Class cMixer
-// The cMixer class is responsible for mixing two asynchronous S/PDIF input
-// streams into a single, synchronized output stream at 48kHz. It manages two
-// cCircularBuff objects, one for each input stream, and handles the drift
-// between them by calculating a drift factor and interpolating samples. The
-// result is a smooth, synchronized audio output that blends both streams.
-//
-// This class compensates for drift by recalculating drift factors after a
-// certain number of samples (DRIF_CALC_NB_SAMPLES). It supports multiple
-// input sample rates (96kHz, 48kHz, 44.1kHz, 32kHz) and handles transitions
-// between them through synchronization mechanisms.
-//
-class cMixer {
+//**********************************************************************************
+// cMixer
+// 3-channel mixer with adaptive drift compensation
+//**********************************************************************************
+class cMixer
+{
 public:
-    //---------------------------------------------------------------------
+    // =========================================================================
     // Constructor
-    // Initializes the mixer by clearing both circular buffers and resetting
-    // internal counters and drift factors.
+    // -------------------------------------------------------------------------
     cMixer() { Initialise(); }
 
-    //---------------------------------------------------------------------
-    // Destructor
-    ~cMixer() {}
+    // =========================================================================
+    // Public methods
+    // -------------------------------------------------------------------------
 
-    //---------------------------------------------------------------------
-    // Initialise
-    // Resets the internal state of the mixer, including drift factors,
-    // sample counters, and synchronization counters. This ensures that
-    // the mixer starts in a consistent state.
-    void Initialise() {
-        BuffIn1.Clear();
-        BuffIn2.Clear();
-        BuffIn3.Clear();
+    // -------------------------------------------------------------------------
+    // Initializes mixer state and resets all parameters
+    // -------------------------------------------------------------------------
+    void Initialise();
 
-        m_Drif_Factor1 = 0;
-        m_Drif_Factor2 = 0;
-        m_Drif_Factor3 = 0;
+    // -------------------------------------------------------------------------
+    // Sample rate getters
+    // -------------------------------------------------------------------------
+    eSampleRate GetSampleRate1() const { return m_SampleRate1; }  // Input 1 sample rate
+    eSampleRate GetSampleRate2() const { return m_SampleRate2; }  // Input 2 sample rate
+    eSampleRate GetSampleRate3() const { return m_SampleRate3; }  // Input 3 sample rate
 
-        m_ctPull = 0;
-        m_ctIN1 = 0;
-        m_ctIN2 = 0;
-        m_ctIN3 = 0;
+    // -------------------------------------------------------------------------
+    // Channel gain setters
+    // -------------------------------------------------------------------------
+    void setGain1(float gain) { m_Gain1 = gain; }           // Set input 1 gain
+    void setGain2(float gain) { m_Gain2 = gain; }           // Set input 2 gain
+    void setGain3(float gain) { m_Gain3 = gain; }           // Set input 3 gain
+    void setGainMaster(float gain) { m_GainMaster = gain; } // Set master gain
 
-        m_CtSynchro1 = 0;
-        m_CtSynchro2 = 0;
-        m_CtSynchro3 = 0;
-
-        m_DateOut1 = 0;
-        m_DateOut2 = 0;
-        m_DateOut3 = 0;
-
-        m_SampleRate1 = eSampleRate::NoSync;
-        m_SampleRate2 = eSampleRate::NoSync;
-        m_SampleRate3 = eSampleRate::NoSync;
-    }
-
-    //---------------------------------------------------------------------
-    // GetSampleRatex
-    eSampleRate GetSampleRate1(){
-    	return m_SampleRate1;
-    }
-
-    eSampleRate GetSampleRate2(){
-    	return m_SampleRate2;
-    }
-
-    eSampleRate GetSampleRate3(){
-    	return m_SampleRate3;
-    }
-    //---------------------------------------------------------------------
-    // pushSamples1
-    // Pushes new samples into the first input circular buffer (Buffer 1).
-    //
-    // Parameters:
-    //   pSamples - Pointer to the input sample array (interleaved L/R).
-    void pushSamples1(int32_t* pSamples);
-
-    //---------------------------------------------------------------------
-    // pushSamples2
-    // Pushes new samples into the second input circular buffer (Buffer 2).
-    //
-    // Parameters:
-    //   pSamples - Pointer to the input sample array (interleaved L/R).
-    void pushSamples2(int32_t* pSamples);
-
-    //---------------------------------------------------------------------
-    // pushSamples3
-    // Pushes new samples into the third input circular buffer (Buffer 1).
-    //
-    // Parameters:
-    //   pSamples - Pointer to the input sample array (interleaved L/R).
-    void pushSamples3(int32_t* pSamples);
-
-    //---------------------------------------------------------------------
-    // pullSamples
-    // Retrieves mixed and synchronized samples from both input buffers,
-    // compensating for drift and ensuring a smooth output. The samples
-    // are interpolated and mixed to produce a final output at 48kHz.
-    //
-    // Parameters:
-    //   pSamples - Pointer to store the output mixed samples (interleaved L/R).
-    void pullSamples(int32_t* pSamples);
+    // -------------------------------------------------------------------------
+    // Sample input/output methods
+    // -------------------------------------------------------------------------
+    void pushSamples1(int32_t* pSamples);  // Push samples to input 1
+    void pushSamples2(int32_t* pSamples);  // Push samples to input 2
+    void pushSamples3(int32_t* pSamples);  // Push samples to input 3
+    void pullSamples(int32_t* pSamples);   // Pull mixed samples from all inputs
 
 private:
-    cCircularBuff BuffIn1;  // Circular buffer for the first input stream
-    cCircularBuff BuffIn2;  // Circular buffer for the second input stream
-    cCircularBuff BuffIn3;  // Circular buffer for the second input stream
+    // =========================================================================
+    // Private methods
+    // -------------------------------------------------------------------------
 
-    float m_Drif_Factor1;   // Drift compensation factor for the first stream
-    float m_Drif_Factor2;   // Drift compensation factor for the second stream
-    float m_Drif_Factor3;   // Drift compensation factor for the second stream
+    // -------------------------------------------------------------------------
+    // Detects sample rate from sample count
+    // -------------------------------------------------------------------------
+    eSampleRate detectSampleRate(uint16_t sampleCount);
 
-    uint16_t m_ctPull;      // Counter for tracking pull operations
-    uint16_t m_ctIN1;       // Counter for input 1 samples
-    uint16_t m_ctIN2;       // Counter for input 2 samples
-    uint16_t m_ctIN3;       // Counter for input 2 samples
+    // -------------------------------------------------------------------------
+    // Converts sample rate enum to frequency value
+    // -------------------------------------------------------------------------
+    float getSampleRate(eSampleRate sr);
 
-    uint8_t m_CtSynchro1;   // Synchronization counter for the first stream
-    uint8_t m_CtSynchro2;   // Synchronization counter for the second stream
-    uint8_t m_CtSynchro3;   // Synchronization counter for the second stream
+    // -------------------------------------------------------------------------
+    // Updates buffer synchronization parameters
+    // -------------------------------------------------------------------------
+    void updateBufferSync(
+        uint16_t& ctIN,               // Input sample counter
+        eSampleRate& currentRate,     // Current sample rate
+        float& nominalFactor,         // Nominal resampling factor
+        float& driftFactor,           // Current drift compensation factor
+        cCircularBuff& buffer,        // Circular buffer
+        double& dateOut               // Output date
+    );
 
-    double m_DateOut1;      // Output timestamp for the first stream
-    double m_DateOut2;      // Output timestamp for the second stream
-    double m_DateOut3;      // Output timestamp for the second stream
+    // -------------------------------------------------------------------------
+    // Adjusts drift factor based on buffer fill level
+    // -------------------------------------------------------------------------
+    void adjustDrift(
+        float& driftFactor,            // Current drift factor to adjust
+        float nominalFactor,           // Nominal resampling factor
+        const cCircularBuff& buffer,   // Circular buffer
+        double readDate                // Current read position
+    );
 
-    eSampleRate m_SampleRate1;  // Detected sample rate for the first stream
-    eSampleRate m_SampleRate2;  // Detected sample rate for the second stream
-    eSampleRate m_SampleRate3;  // Detected sample rate for the third stream
+    // =========================================================================
+    // Member variables
+    // -------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------------
+    // Circular buffers for each input
+    // -----------------------------------------------------------------------------
+    cCircularBuff BuffIn1;  // Input buffer for channel 1
+    cCircularBuff BuffIn2;  // Input buffer for channel 2
+    cCircularBuff BuffIn3;  // Input buffer for channel 3
+
+    // -----------------------------------------------------------------------------
+    // Drift compensation factors (adaptive)
+    // -----------------------------------------------------------------------------
+    float m_Drif_Factor1;  // Drift factor for input 1
+    float m_Drif_Factor2;  // Drift factor for input 2
+    float m_Drif_Factor3;  // Drift factor for input 3
+
+    // -----------------------------------------------------------------------------
+    // Nominal resampling factors (input_rate / 48000)
+    // -----------------------------------------------------------------------------
+    float m_nominal_factor1;  // Nominal factor for input 1
+    float m_nominal_factor2;  // Nominal factor for input 2
+    float m_nominal_factor3;  // Nominal factor for input 3
+
+    // -----------------------------------------------------------------------------
+    // Adaptation parameters
+    // -----------------------------------------------------------------------------
+    double m_alpha = 0.0000001;  // Low-pass IIR filter coefficient
+    float m_gain = 0.5f;         // Correction gain based on fill level
+
+    // -----------------------------------------------------------------------------
+    // Counters
+    // -----------------------------------------------------------------------------
+    uint16_t m_ctPull;        // Pull sample counter
+    uint16_t m_ctIN1;         // Input 1 sample counter
+    uint16_t m_ctIN2;         // Input 2 sample counter
+    uint16_t m_ctIN3;         // Input 3 sample counter
+
+    // -----------------------------------------------------------------------------
+    // Output timestamps
+    // -----------------------------------------------------------------------------
+    double m_DateOut1;  // Output date for channel 1
+    double m_DateOut2;  // Output date for channel 2
+    double m_DateOut3;  // Output date for channel 3
+
+    // -----------------------------------------------------------------------------
+    // Detected sample rates
+    // -----------------------------------------------------------------------------
+    eSampleRate m_SampleRate1;  // Sample rate for input 1
+    eSampleRate m_SampleRate2;  // Sample rate for input 2
+    eSampleRate m_SampleRate3;  // Sample rate for input 3
+
+    // -----------------------------------------------------------------------------
+    // Gain controls
+    // -----------------------------------------------------------------------------
+    float m_Gain1;        // Gain for input channel 1
+    float m_Gain2;        // Gain for input channel 2
+    float m_Gain3;        // Gain for input channel 3
+    float m_GainMaster;   // Master output gain
 };
 
-} /* namespace Dad */
+} // namespace Dad
 
-#endif /* CMIXER_H_ */
+//***End of file**************************************************************

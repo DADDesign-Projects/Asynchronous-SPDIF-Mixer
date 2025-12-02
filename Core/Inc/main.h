@@ -31,7 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "Options.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -83,7 +83,17 @@ void Error_Handler(void);
 #define NO_AUDIO1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#define CC_GAIN_1 21
+#define CC_GAIN_2 20
+#define CC_GAIN_3 22
+#define CC_GAIN_MASTER 23
+#define MIDI_CANAL 1
+#define FLASH_ADR 0x90000000
 
+void OnNoteOn(uint8_t channel, uint8_t note, uint8_t velocity);
+void OnNoteOff(uint8_t channel, uint8_t note, uint8_t velocity);
+void OnControlChange(uint8_t channel, uint8_t control, uint8_t value);
+void OnProgramChange(uint8_t channel, uint8_t program);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

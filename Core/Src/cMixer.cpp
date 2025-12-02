@@ -1,320 +1,348 @@
-//******************************************************************************
-// cMixer.cpp
-// Implementation of the cCircularBuff and cMixer classes for handling asynchronous
-// S/PDIF audio stream synchronization and mixing.
-//******************************************************************************
+//==================================================================================
+//==================================================================================
+// File: cMixer.cpp
+// Description: Synchronization and mixing of 3 asynchronous S/PDIF audio streams to 48kHz
+//              with adaptive drift compensation based on buffer fill level
+//
+// Copyright (c) 2025 Dad Design.
+//==================================================================================
+//==================================================================================
 
+//**********************************************************************************
+// cMixer.cpp
+// Synchronization and mixing of 3 asynchronous S/PDIF audio streams to 48kHz
+// with adaptive drift compensation based on buffer fill level
+//**********************************************************************************
 #include "cMixer.h"
-#include "Debug.h"
+#include <algorithm>
 
 namespace Dad {
 
-//***************************************************************************
+//**********************************************************************************
 // cCircularBuff
-// Circular buffer class for storing audio samples with interpolation support.
-// This buffer wraps around when full, ensuring that new samples overwrite
-// the oldest, and allows for smooth sample transitions through interpolation.
+//**********************************************************************************
 
-    //---------------------------------------------------------------------
-    // Push
-    // Converts 24-bit signed samples into normalized floating-point values
-    // and stores them in the circular buffer. When the buffer is full, it
-    // wraps around, overwriting the oldest samples.
-    //
-    // Parameters:
-    //   pSamples - Pointer to an array containing 24-bit interleaved stereo
-    //              samples (Left, Right).
-    void cCircularBuff::Push(int32_t *pSamples) {
-        // Convert 24-bit signed samples to 32-bit integers with sign extension
-        int32_t sampleL = (pSamples[0] << 8) >> 8;  // Left channel
-        int32_t sampleR = (pSamples[1] << 8) >> 8;  // Right channel
+// =============================================================================
+// Public methods
+// -----------------------------------------------------------------------------
 
-        // Normalize the 24-bit samples to floating-point values
-        *m_pBuffer++ = CoefNormalizeIntToFloat * sampleL;
-        *m_pBuffer++ = CoefNormalizeIntToFloat * sampleR;
+// -----------------------------------------------------------------------------
+// Pushes samples into the circular buffer
+// -----------------------------------------------------------------------------
+void cCircularBuff::Push(int32_t *pSamples)
+{
+    // Sign extension 24-bit -> 32-bit then normalization
+    int32_t sampleL = (pSamples[0] << 8) >> 8;  // Left channel
+    int32_t sampleR = (pSamples[1] << 8) >> 8;  // Right channel
 
-        // Wrap the buffer pointer when it reaches the end (circular behavior)
-        if (m_pBuffer >= &m_Buffer[CIRCULAR_BUFFER_SIZE * 2]) {
-            m_pBuffer = m_Buffer;  // Reset pointer to the beginning
-        }
+    // Store normalized samples
+    *m_pBuffer++ = COEF_NORMALIZE * sampleL;
+    *m_pBuffer++ = COEF_NORMALIZE * sampleR;
 
-        // Increment the timestamp (date) of the buffer for synchronization purposes
-        m_Date++;
+    // Wrap around if end of buffer reached
+    if (m_pBuffer >= &m_Buffer[CIRCULAR_BUFFER_SIZE * 2])
+    {
+        m_pBuffer = m_Buffer;
     }
 
-    //---------------------------------------------------------------------
-    // Pull
-    // Retrieves interpolated samples from the buffer based on the specified date.
-    // If the requested date is out of bounds, silence (zero samples) is returned.
-    // Otherwise, it calculates the position in the buffer and interpolates between
-    // two adjacent samples for smooth audio transitions.
-    //
-    // Parameters:
-    //   pSamples - Pointer to an array to store the retrieved samples (Left, Right).
-    //   Date     - The date (timestamp) to retrieve samples for, with interpolation.
-    void cCircularBuff::Pull(float *pSamples, double Date) {
-        // If the requested date is out of bounds, return silence
-        if ((Date > m_Date) || (Date + CIRCULAR_BUFFER_SIZE < m_Date)) {
-            pSamples[0] = 0.0f;  // Left channel
-            pSamples[1] = 0.0f;  // Right channel
-        } else {
-            // Calculate the integer and fractional part of the requested date
-            uint32_t IntDate = static_cast<uint32_t>(Date);
-            uint32_t IndexDate = static_cast<uint32_t>(m_Date) - IntDate;
-            float FracDate = Date - IntDate;
+    m_Date++;  // Increment internal timestamp
+}
 
-            // Determine the buffer position, ensuring circular wrap-around
-            uint32_t bufferIndex = (m_pBuffer - m_Buffer - (IndexDate * 2) + (CIRCULAR_BUFFER_SIZE * 2)) % (CIRCULAR_BUFFER_SIZE * 2);
-            float Sample1 = m_Buffer[bufferIndex];       // Left channel sample
-            float Sample2 = m_Buffer[bufferIndex + 1];   // Right channel sample
-
-            // Calculate the next buffer index and interpolate between samples
-            uint32_t nextIndex = (bufferIndex + 2) % (CIRCULAR_BUFFER_SIZE * 2);
-            pSamples[0] = (Sample1 * (1 - FracDate)) + (m_Buffer[nextIndex] * FracDate);  // Interpolated left sample
-            pSamples[1] = (Sample2 * (1 - FracDate)) + (m_Buffer[nextIndex + 1] * FracDate);  // Interpolated right sample
-        }
+// -----------------------------------------------------------------------------
+// Pulls samples from the circular buffer with interpolation
+// -----------------------------------------------------------------------------
+void cCircularBuff::Pull(float *pSamples, double date)
+{
+    // Return silence if date is out of bounds
+    if ((date > m_Date) || (date + CIRCULAR_BUFFER_SIZE < m_Date))
+    {
+        pSamples[0] = pSamples[1] = 0.0f;
+        return;
     }
 
-//***************************************************************************
+    // Calculate integer and fractional parts of date for interpolation
+    uint32_t intDate = static_cast<uint32_t>(date);          // Integer part
+    float fracDate = static_cast<float>(date - intDate);     // Fractional part
+    uint32_t indexOffset = static_cast<uint32_t>(m_Date) - intDate;  // Offset from current date
+
+    // Calculate buffer position with wrap-around
+    uint32_t bufferIndex = (m_pBuffer - m_Buffer - (indexOffset * 2) +
+                            (CIRCULAR_BUFFER_SIZE * 2)) % (CIRCULAR_BUFFER_SIZE * 2);
+
+    // Linear interpolation between current and next sample
+    uint32_t nextIndex = (bufferIndex + 2) % (CIRCULAR_BUFFER_SIZE * 2);  // Next sample position
+    float oneMinusFrac = 1.0f - fracDate;                                 // Weight for current sample
+
+    // Interpolate left and right channels
+    pSamples[0] = m_Buffer[bufferIndex] * oneMinusFrac + m_Buffer[nextIndex] * fracDate;
+    pSamples[1] = m_Buffer[bufferIndex + 1] * oneMinusFrac + m_Buffer[nextIndex + 1] * fracDate;
+}
+
+//**********************************************************************************
 // cMixer
-// Class responsible for mixing two circular buffers, compensating for drift
-// between asynchronous S/PDIF input streams. The mixer calculates drift factors,
-// synchronizes the two streams, and produces a single mixed output stream.
-//
-// It periodically recalculates the drift to ensure the output remains synchronized.
+//**********************************************************************************
 
-    //---------------------------------------------------------------------
-    // pushSamples1
-    // Pushes audio samples into the first input buffer (Buffer 1).
-    //
-    // Parameters:
-    //   pSamples - Pointer to the input sample array (interleaved Left/Right).
-    void cMixer::pushSamples1(int32_t* pSamples) {
-        for (int Index = 0; Index < RX_BUFFER_SIZE; Index += 2) {
-            BuffIn1.Push(pSamples);  // Push samples into Buffer 1
-            pSamples += 2;           // Move to the next stereo sample (L/R)
-            m_ctIN1++;               // Increment input sample counter for Buffer 1
+// =============================================================================
+// Public methods
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// Initializes mixer state and resets all parameters
+// -----------------------------------------------------------------------------
+void cMixer::Initialise()
+{
+    // Clear input buffers
+    BuffIn1.Clear();
+    BuffIn2.Clear();
+    BuffIn3.Clear();
+
+    // Initialize drift and nominal factors
+    m_Drif_Factor1 = m_Drif_Factor2 = m_Drif_Factor3 = 0.0f;
+    m_nominal_factor1 = m_nominal_factor2 = m_nominal_factor3 = 1.0f;
+
+    // Reset counters and output dates
+    m_ctPull = m_ctIN1 = m_ctIN2 = m_ctIN3 = 0;
+    m_DateOut1 = m_DateOut2 = m_DateOut3 = 0.0;
+
+    // Reset sample rates and gains
+    m_SampleRate1 = m_SampleRate2 = m_SampleRate3 = eSampleRate::NoSync;
+    m_Gain1 = m_Gain2 = m_Gain3 = m_GainMaster = 1.0f;
+}
+
+// -----------------------------------------------------------------------------
+// Converts sample rate enum to floating point value
+// -----------------------------------------------------------------------------
+float cMixer::getSampleRate(eSampleRate sr)
+{
+    switch (sr)
+    {
+        case eSampleRate::SR32000: return 32000.0f;
+        case eSampleRate::SR41000: return 41000.0f;
+        case eSampleRate::SR44100: return 44100.0f;
+        case eSampleRate::SR48000: return 48000.0f;
+        case eSampleRate::SR96000: return 96000.0f;
+        default: return 48000.0f;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Detects sample rate based on received sample count
+// -----------------------------------------------------------------------------
+eSampleRate cMixer::detectSampleRate(uint16_t sampleCount)
+{
+    // Detection with tolerance ±RX_BUFFER_SIZE
+    struct RateCheck
+    {
+        uint16_t delta;         // Expected delta value
+        eSampleRate rate;       // Corresponding sample rate
+    };
+
+    // Table of known sample rates and their expected deltas
+    const RateCheck rates[] =
+    {
+        {DELTA_DATE_96000, eSampleRate::SR96000},
+        {DELTA_DATE_48000, eSampleRate::SR48000},
+        {DELTA_DATE_44100, eSampleRate::SR44100},
+        {DELTA_DATE_41000, eSampleRate::SR41000},
+        {DELTA_DATE_32000, eSampleRate::SR32000}
+    };
+
+    // Check each rate against the received sample count
+    for (const auto& r : rates)
+    {
+        if (sampleCount < (r.delta + RX_BUFFER_SIZE) &&
+            sampleCount > (r.delta - RX_BUFFER_SIZE))
+        {
+            return r.rate;
         }
     }
 
-    //---------------------------------------------------------------------
-    // pushSamples2
-    // Pushes audio samples into the second input buffer (Buffer 2).
-    //
-    // Parameters:
-    //   pSamples - Pointer to the input sample array (interleaved Left/Right).
-    void cMixer::pushSamples2(int32_t* pSamples) {
-        for (int Index = 0; Index < RX_BUFFER_SIZE; Index += 2) {
-            BuffIn2.Push(pSamples);  // Push samples into Buffer 2
-            pSamples += 2;           // Move to the next stereo sample (L/R)
-            m_ctIN2++;               // Increment input sample counter for Buffer 2
+    return eSampleRate::NoSync;  // No valid rate detected
+}
+
+// -----------------------------------------------------------------------------
+// Updates buffer synchronization parameters based on detected sample rate
+// -----------------------------------------------------------------------------
+void cMixer::updateBufferSync(
+    uint16_t& ctIN,               // Input sample counter
+    eSampleRate& currentRate,     // Current sample rate
+    float& nominalFactor,         // Nominal resampling factor
+    float& driftFactor,           // Current drift compensation factor
+    cCircularBuff& buffer,        // Circular buffer
+    double& dateOut               // Output date pointer
+)
+{
+    // Detect sample rate from input counter
+    eSampleRate detectedRate = detectSampleRate(ctIN);
+    ctIN = 0;  // Reset input counter
+
+    if (detectedRate != eSampleRate::NoSync)
+    {
+        // If rate changed, update all parameters
+        if (detectedRate != currentRate)
+        {
+            currentRate = detectedRate;
+            nominalFactor = getSampleRate(detectedRate) / 48000.0f;  // Calculate resampling ratio
+            driftFactor = nominalFactor;                              // Initialize drift factor
+            buffer.setDate(0.0);                                      // Reset buffer date
+            dateOut = 0.0;                                            // Reset output date
         }
     }
+    else
+    {
+        // No synchronization detected
+        driftFactor = 0.0f;
+        currentRate = eSampleRate::NoSync;
+        buffer.setDate(0.0);
+        dateOut = 0.0;
+    }
+}
 
-    //---------------------------------------------------------------------
-    // pushSamples3
-    // Pushes audio samples into the third input buffer (Buffer 2).
-    //
-    // Parameters:
-    //   pSamples - Pointer to the input sample array (interleaved Left/Right).
-    void cMixer::pushSamples3(int32_t* pSamples) {
-        for (int Index = 0; Index < RX_BUFFER_SIZE; Index += 2) {
-            BuffIn3.Push(pSamples);  // Push samples into Buffer 3
-            pSamples += 2;           // Move to the next stereo sample (L/R)
-            m_ctIN3++;               // Increment input sample counter for Buffer 3
-        }
+// -----------------------------------------------------------------------------
+// Adjusts drift compensation factor based on buffer fill level
+// -----------------------------------------------------------------------------
+void cMixer::adjustDrift(
+    float& driftFactor,            // Current drift factor to adjust
+    float nominalFactor,           // Nominal resampling factor
+    const cCircularBuff& buffer,   // Circular buffer reference
+    double readDate                // Current read position
+)
+{
+    if (driftFactor == 0.0f) return;  // No adjustment if no sync
+
+    // Calculate buffer fill level error
+    double age = buffer.getDate() - readDate;                // Current buffer age
+    double targetAge = static_cast<double>(RX_BUFFER_SIZE);  // Target buffer age
+    double error = (age - targetAge) / targetAge;            // Normalized error
+
+    // Proportional adjustment based on error
+    double adjustment = 1.0 + error * m_gain;           // Apply gain to error
+    double factorTarget = nominalFactor * adjustment;   // Target factor
+
+    // Clamp to ±50% of nominal factor
+    factorTarget = std::max(0.5 * nominalFactor,
+                            std::min(1.5 * nominalFactor, factorTarget));
+
+    // Low-pass IIR filter to avoid artifacts
+    driftFactor = static_cast<float>(m_alpha * factorTarget +
+                                     (1.0 - m_alpha) * driftFactor);
+}
+
+// -----------------------------------------------------------------------------
+// Pushes samples into input buffer 1
+// -----------------------------------------------------------------------------
+void cMixer::pushSamples1(int32_t* pSamples)
+{
+    // Process all samples in the buffer
+    for (int i = 0; i < RX_BUFFER_SIZE; i += 2)
+    {
+        BuffIn1.Push(pSamples);  // Push stereo pair
+        pSamples += 2;           // Move to next stereo pair
+        m_ctIN1++;               // Increment sample counter
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Pushes samples into input buffer 2
+// -----------------------------------------------------------------------------
+void cMixer::pushSamples2(int32_t* pSamples)
+{
+    // Process all samples in the buffer
+    for (int i = 0; i < RX_BUFFER_SIZE; i += 2)
+    {
+        BuffIn2.Push(pSamples);  // Push stereo pair
+        pSamples += 2;           // Move to next stereo pair
+        m_ctIN2++;               // Increment sample counter
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Pushes samples into input buffer 3
+// -----------------------------------------------------------------------------
+void cMixer::pushSamples3(int32_t* pSamples)
+{
+    // Process all samples in the buffer
+    for (int i = 0; i < RX_BUFFER_SIZE; i += 2)
+    {
+        BuffIn3.Push(pSamples);  // Push stereo pair
+        pSamples += 2;           // Move to next stereo pair
+        m_ctIN3++;               // Increment sample counter
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Pulls mixed samples from all synchronized buffers
+// -----------------------------------------------------------------------------
+void cMixer::pullSamples(int32_t* pSamples)
+{
+    // Periodically detect and update sample rates
+    if (m_ctPull >= DRIF_CALC_NB_SAMPLES)
+    {
+        m_ctPull = 0;  // Reset pull counter
+
+        // Update synchronization for all three inputs
+        updateBufferSync(m_ctIN1, m_SampleRate1, m_nominal_factor1,
+                        m_Drif_Factor1, BuffIn1, m_DateOut1);
+        updateBufferSync(m_ctIN2, m_SampleRate2, m_nominal_factor2,
+                        m_Drif_Factor2, BuffIn2, m_DateOut2);
+        updateBufferSync(m_ctIN3, m_SampleRate3, m_nominal_factor3,
+                        m_Drif_Factor3, BuffIn3, m_DateOut3);
     }
 
-    //---------------------------------------------------------------------
-    // pullSamples
-    // Retrieves mixed samples from both input buffers. This function handles
-    // the synchronization of the two streams by calculating drift factors
-    // periodically and compensating for timing differences between them.
-    // It interpolates the samples from each buffer and mixes them together
-    // to produce a final output at a fixed rate (48kHz).
-    //
-    // Parameters:
-    //   pSamples - Pointer to the output array where the mixed samples (L/R) will be stored.
-    void cMixer::pullSamples(int32_t* pSamples) {
-        // Periodically recalculate drift compensation every DRIF_CALC_NB_SAMPLES samples
-        if (m_ctPull >= DRIF_CALC_NB_SAMPLES) {
-            eSampleRate SampleRate;
-            m_ctPull = 0;
+    // Mix samples for the entire output buffer
+    for (int i = 0; i < TX_BUFFER_SIZE; i += 2)
+    {
+        float sample1[2] = {0.0f, 0.0f};  // Buffer for input 1
+        float sample2[2] = {0.0f, 0.0f};  // Buffer for input 2
+        float sample3[2] = {0.0f, 0.0f};  // Buffer for input 3
 
-            //-------------------------------------------------------------------------------------------------------------------
-            // Determine the sample rate and synchronize Buffer 1
-            if ((m_ctIN1 < (DELTA_DATE_48000 + RX_BUFFER_SIZE)) && (m_ctIN1 > (DELTA_DATE_48000 - RX_BUFFER_SIZE))) {
-                SampleRate = eSampleRate::SR48000;
-            } else if ((m_ctIN1 < (DELTA_DATE_44100 + RX_BUFFER_SIZE)) && (m_ctIN1 > (DELTA_DATE_44100 - RX_BUFFER_SIZE))) {
-                SampleRate = eSampleRate::SR44100;
-            } else if ((m_ctIN1 < (DELTA_DATE_96000 + RX_BUFFER_SIZE)) && (m_ctIN1 > (DELTA_DATE_96000 - RX_BUFFER_SIZE))) {
-                SampleRate = eSampleRate::SR96000;
-            } else if ((m_ctIN1 < (DELTA_DATE_32000 + RX_BUFFER_SIZE)) && (m_ctIN1 > (DELTA_DATE_32000 - RX_BUFFER_SIZE))) {
-                SampleRate = eSampleRate::SR32000;
-            } else {
-                SampleRate = eSampleRate::NoSync;
-                m_Drif_Factor1 = 0;
-                m_SampleRate1 = eSampleRate::NoSync;
-                BuffIn1.setDate(0);   // Reset buffer 1 timestamp
-                m_DateOut1 = 0;       // Reset output timestamp
-            }
-
-            m_ctIN1 = 0;
-
-            // Synchronization logic for Buffer 1 based on sample rate
-            if (SampleRate != eSampleRate::NoSync) {
-                if (SampleRate == m_SampleRate1) {
-                    if (m_CtSynchro1 >= 1) {
-                        // If synchronized, calculate drift factor
-                        if (m_Drif_Factor1 == 0) {
-                            m_Drif_Factor1 = BuffIn1.getDate() / (m_DateOut1 + TX_BUFFER_SIZE);  // Initial drift calculation
-                        } else {
-                            float DeltaFactor = m_Drif_Factor1 - BuffIn1.getDate() / (m_DateOut1 + TX_BUFFER_SIZE);
-                            m_Drif_Factor1 -= DeltaFactor / 7;  // Smooth drift correction
-                        }
-                    } else {
-                        m_CtSynchro1++;  // Increment synchronization counter
-                    }
-                } else {
-                    m_SampleRate1 = SampleRate;
-                    m_CtSynchro1 = 0;     	// Reset synchronization counter
-                    m_Drif_Factor1 = 0;	  	// Reset Drift Factor
-                    BuffIn1.setDate(0);   	// Reset buffer 1 timestamp
-                    m_DateOut1 = 0;       	// Reset output timestamp
-                }
-            }
-
-            //-------------------------------------------------------------------------------------------------------------------
-            // Determine the sample rate and synchronize Buffer 2 (same logic as Buffer 1)
-            if ((m_ctIN2 < (DELTA_DATE_48000 + RX_BUFFER_SIZE)) && (m_ctIN2 > (DELTA_DATE_48000 - RX_BUFFER_SIZE))) {
-                SampleRate = eSampleRate::SR48000;
-            } else if ((m_ctIN2 < (DELTA_DATE_44100 + RX_BUFFER_SIZE)) && (m_ctIN2 > (DELTA_DATE_44100 - RX_BUFFER_SIZE))) {
-                SampleRate = eSampleRate::SR44100;
-            } else if ((m_ctIN2 < (DELTA_DATE_96000 + RX_BUFFER_SIZE)) && (m_ctIN2 > (DELTA_DATE_96000 - RX_BUFFER_SIZE))) {
-                SampleRate = eSampleRate::SR96000;
-            } else if ((m_ctIN2 < (DELTA_DATE_32000 + RX_BUFFER_SIZE)) && (m_ctIN2 > (DELTA_DATE_32000 - RX_BUFFER_SIZE))) {
-                SampleRate = eSampleRate::SR32000;
-            } else {
-                SampleRate = eSampleRate::NoSync;
-                m_Drif_Factor2 = 0;
-                m_SampleRate2 = eSampleRate::NoSync;
-                BuffIn2.setDate(0);   // Reset buffer 2 timestamp
-                m_DateOut2 = 0;       // Reset output timestamp
-            }
-
-            m_ctIN2 = 0;
-
-            // Synchronization logic for Buffer 2 (similar to Buffer 1)
-            if (SampleRate != eSampleRate::NoSync) {
-                if (SampleRate == m_SampleRate2) {
-                    if (m_CtSynchro2 >= 1) {
-                        // If synchronized, calculate drift factor
-                        if (m_Drif_Factor2 == 0) {
-                            m_Drif_Factor2 = BuffIn2.getDate() / (m_DateOut2 + TX_BUFFER_SIZE);
-                        } else {
-                            float DeltaFactor = m_Drif_Factor2 - BuffIn2.getDate() / (m_DateOut2 + TX_BUFFER_SIZE);
-                            m_Drif_Factor2 -= DeltaFactor / 7;  // Smooth drift correction
-                        }
-                    } else {
-                        m_CtSynchro2++;  // Increment synchronization counter
-                    }
-                } else {
-                    m_SampleRate2 = SampleRate;
-                    m_CtSynchro2 = 0;  		// Reset synchronization counter
-                    m_Drif_Factor2 = 0;	  	// Reset Drift Factor
-                    BuffIn2.setDate(0);   	// Reset buffer 1 timestamp
-                    m_DateOut2 = 0;       	// Reset output timestamp
-                }
-            }
-
-			//-------------------------------------------------------------------------------------------------------------------
-			// Determine the sample rate and synchronize Buffer  (same logic as Buffer 1)
-			if ((m_ctIN3 < (DELTA_DATE_48000 + RX_BUFFER_SIZE)) && (m_ctIN3 > (DELTA_DATE_48000 - RX_BUFFER_SIZE))) {
-				SampleRate = eSampleRate::SR48000;
-			} else if ((m_ctIN3 < (DELTA_DATE_44100 + RX_BUFFER_SIZE)) && (m_ctIN3 > (DELTA_DATE_44100 - RX_BUFFER_SIZE))) {
-				SampleRate = eSampleRate::SR44100;
-			} else if ((m_ctIN3 < (DELTA_DATE_96000 + RX_BUFFER_SIZE)) && (m_ctIN3 > (DELTA_DATE_96000 - RX_BUFFER_SIZE))) {
-				SampleRate = eSampleRate::SR96000;
-			} else if ((m_ctIN3 < (DELTA_DATE_32000 + RX_BUFFER_SIZE)) && (m_ctIN3 > (DELTA_DATE_32000 - RX_BUFFER_SIZE))) {
-				SampleRate = eSampleRate::SR32000;
-			} else {
-				SampleRate = eSampleRate::NoSync;
-				m_Drif_Factor3 = 0;
-				m_SampleRate3 = eSampleRate::NoSync;
-				BuffIn3.setDate(0);   // Reset buffer 3 timestamp
-				m_DateOut3 = 0;       // Reset output timestamp
-			}
-
-			m_ctIN3 = 0;
-
-			// Synchronization logic for Buffer 3 (similar to Buffer 1)
-			if (SampleRate != eSampleRate::NoSync) {
-				if (SampleRate == m_SampleRate3) {
-					if (m_CtSynchro3 >= 1) {
-						// If synchronized, calculate drift factor
-						if (m_Drif_Factor3 == 0) {
-							m_Drif_Factor3 = BuffIn3.getDate() / (m_DateOut3 + TX_BUFFER_SIZE);
-						} else {
-							float DeltaFactor = m_Drif_Factor3 - BuffIn3.getDate() / (m_DateOut3 + TX_BUFFER_SIZE);
-							m_Drif_Factor3 -= DeltaFactor / 7;  // Smooth drift correction
-						}
-					} else {
-						m_CtSynchro3++;  // Increment synchronization counter
-					}
-				} else {
-					m_SampleRate3 = SampleRate;
-					m_CtSynchro3 = 0;  		// Reset synchronization counter
-					m_Drif_Factor3 = 0;	  	// Reset Drift Factor
-					BuffIn3.setDate(0);   	// Reset buffer 1 timestamp
-					m_DateOut3 = 0;       	// Reset output timestamp
-				}
-			}
-		}
-
-        //-------------------------------------------------------------------------------------------------------------------
-        // Mix and interpolate samples from both buffers
-        for (int Index = 0; Index < TX_BUFFER_SIZE; Index += 2) {
-            float Sample1[2];  // Temporary buffer for Buffer 1 samples (L/R)
-            float Sample2[2];  // Temporary buffer for Buffer 2 samples (L/R)
-            float Sample3[2];  // Temporary buffer for Buffer 3 samples (L/R)
-
-            // Pull interpolated samples from Buffer 1
-            if (m_Drif_Factor1 != 0) {
-                BuffIn1.Pull(Sample1, (m_DateOut1 * m_Drif_Factor1) - RX_BUFFER_SIZE);
-            } else {
-                Sample1[0] = 0;  // Silence if no valid samples
-                Sample1[1] = 0;
-            }
-
-            // Pull interpolated samples from Buffer 2
-            if (m_Drif_Factor2 != 0) {
-                BuffIn2.Pull(Sample2, (m_DateOut2 * m_Drif_Factor2) - RX_BUFFER_SIZE);
-            } else {
-                Sample2[0] = 0;  // Silence if no valid samples
-                Sample2[1] = 0;
-            }
-
-            // Pull interpolated samples from Buffer 3
-            if (m_Drif_Factor3 != 0) {
-                BuffIn3.Pull(Sample3, (m_DateOut3 * m_Drif_Factor3) - RX_BUFFER_SIZE);
-            } else {
-                Sample3[0] = 0;  // Silence if no valid samples
-                Sample3[1] = 0;
-            }
-
-            // Mix the two sets of samples (average the values)
-            pSamples[0] = static_cast<int32_t>((Sample1[0] + Sample2[0] + Sample3[0]) / CoefNormalizeIntToFloat);  // Left channel
-            pSamples[1] = static_cast<int32_t>((Sample1[1] + Sample2[1] + Sample3[0]) / CoefNormalizeIntToFloat);  // Right channel
-
-            // Move to the next output sample pair
-            pSamples += 2;
-
-            // Increment the output dates for both buffers
-            m_DateOut1++;
-            m_DateOut2++;
-            m_DateOut3++;
-            m_ctPull++;
+        // Process input 1 if synchronized
+        if (m_Drif_Factor1 != 0.0f)
+        {
+            // Calculate read position with drift compensation
+            double readDate1 = (m_DateOut1 * m_Drif_Factor1) - RX_BUFFER_SIZE;
+            BuffIn1.Pull(sample1, readDate1);      // Pull samples from buffer
+            sample1[0] *= m_Gain1;                 // Apply channel gain
+            sample1[1] *= m_Gain1;
+            adjustDrift(m_Drif_Factor1, m_nominal_factor1, BuffIn1, readDate1);  // Adjust drift
         }
-    }
 
-} /* namespace Dad */
+        // Process input 2 if synchronized
+        if (m_Drif_Factor2 != 0.0f)
+        {
+            // Calculate read position with drift compensation
+            double readDate2 = (m_DateOut2 * m_Drif_Factor2) - RX_BUFFER_SIZE;
+            BuffIn2.Pull(sample2, readDate2);      // Pull samples from buffer
+            sample2[0] *= m_Gain2;                 // Apply channel gain
+            sample2[1] *= m_Gain2;
+            adjustDrift(m_Drif_Factor2, m_nominal_factor2, BuffIn2, readDate2);  // Adjust drift
+        }
+
+        // Process input 3 if synchronized
+        if (m_Drif_Factor3 != 0.0f)
+        {
+            // Calculate read position with drift compensation
+            double readDate3 = (m_DateOut3 * m_Drif_Factor3) - RX_BUFFER_SIZE;
+            BuffIn3.Pull(sample3, readDate3);      // Pull samples from buffer
+            sample3[0] *= m_Gain3;                 // Apply channel gain
+            sample3[1] *= m_Gain3;
+            adjustDrift(m_Drif_Factor3, m_nominal_factor3, BuffIn3, readDate3);  // Adjust drift
+        }
+
+        // Mix all channels and denormalize
+        pSamples[0] = static_cast<int32_t>((sample1[0] + sample2[0] + sample3[0]) * m_GainMaster * COEF_DENORMALIZE);
+        pSamples[1] = static_cast<int32_t>((sample1[1] + sample2[1] + sample3[1]) * m_GainMaster * COEF_DENORMALIZE);
+
+        pSamples += 2;  // Move to next output stereo pair
+
+        // Increment output dates and pull counter
+        m_DateOut1++;
+        m_DateOut2++;
+        m_DateOut3++;
+        m_ctPull++;
+    }
+}
+
+} // namespace Dad
+
+//***End of file**************************************************************

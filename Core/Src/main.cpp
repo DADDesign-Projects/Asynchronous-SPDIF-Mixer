@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -25,12 +26,14 @@
 #include "cSAI_SPDIF_TX.h"
 #include "cSPDIF_RX.h"
 #include "cSAI_DIR9001_RX.h"
-#include "Debug.h"
+#include "usbd_cdc_if.h"
+#include "W25Q128.h"
+#include "cFlashManager.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define RAM_D3 __attribute__((section(".RAM_D3_Section")))
+//#define RAM_D3 __attribute__((section(".RAM_D3_Section")))
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -59,17 +62,21 @@ DMA_HandleTypeDef hdma_spdif_rx_dt;
 
 TIM_HandleTypeDef htim6;
 
-PCD_HandleTypeDef hpcd_USB_OTG_FS;
-
 /* USER CODE BEGIN PV */
 int32_t __SAI_DIR9001_RX1_Buffer[40];
 int32_t __SAI_DIR9001_RX2_Buffer[40];
 
-Dad::cMixer 		__Mixer;
-Dad::cSAI_SPDIF_TX 	__SAI_SPDIF_TX;
-Dad::cSAI_DIR9001_RX1 __SAI_DIR9001_RX1;
-Dad::cSAI_DIR9001_RX2 __SAI_DIR9001_RX2;
-Dad::cSPDIF_RX 		__SPDIFRX;
+Dad::cMixer 		  	__Mixer;
+Dad::cSAI_SPDIF_TX 	  	__SAI_SPDIF_TX;
+Dad::cSAI_DIR9001_RX1 	__SAI_DIR9001_RX1;
+Dad::cSAI_DIR9001_RX2 	__SAI_DIR9001_RX2;
+Dad::cSPDIF_RX 		  	__SPDIFRX;
+
+DadDrivers::cW25Q128		__Flash;
+DadDrivers::cFlashManager 	__FlashManager;
+bool 						__FlashStatus = false;
+MemStruct					__MemStruct;
+bool						__MemStructChange = false;
 
 /* USER CODE END PV */
 
@@ -84,7 +91,6 @@ static void MX_SAI2_Init(void);
 static void MX_SPDIFRX1_Init(void);
 static void MX_SAI3_Init(void);
 static void MX_QUADSPI_Init(void);
-static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -92,7 +98,60 @@ static void MX_TIM6_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void OnNoteOn(uint8_t channel, uint8_t note, uint8_t velocity){
 
+}
+void OnNoteOff(uint8_t channel, uint8_t note, uint8_t velocity){
+
+}
+
+float midiToGain(uint8_t midiValue) {
+    if (midiValue == 0) {
+        return 0.0f;  // Silence complet
+    }
+
+    // Normalisation 0-127 vers 0.0-1.0
+    float normalized = midiValue / 127.0f;
+
+    // Mapping linéaire vers la plage -50dB à +6dB (56dB de plage totale)
+    float dB = -45.0f + (normalized * 51.0f);
+
+    // Conversion dB vers gain linéaire : gain = 10^(dB/20)
+    float gain = powf(10.0f, dB / 20.0f);
+
+    return gain;
+}
+
+void OnControlChange(uint8_t channel, uint8_t control, uint8_t value){
+	if(control == CC_GAIN_1){
+		__MemStruct.vol1 = value;
+		__MemStructChange = true;
+		float Gain =  midiToGain(value);
+		__Mixer.setGain1(Gain);
+	}
+	if(control == CC_GAIN_2){
+		__MemStruct.vol2 = value;
+		__MemStructChange = true;
+		float Gain =  midiToGain(value);
+		__Mixer.setGain2(Gain);
+	}
+	if(control == CC_GAIN_3){
+		__MemStruct.vol3 = value;
+		__MemStructChange = true;
+		float Gain =  midiToGain(value);
+		__Mixer.setGain3(Gain);
+	}
+	if(control == CC_GAIN_MASTER){
+		__MemStruct.volMaster = value;
+		__MemStructChange = true;
+		float Gain =  midiToGain(value);
+		__Mixer.setGainMaster(Gain);
+	}
+}
+
+void OnProgramChange(uint8_t channel, uint8_t program){
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -139,10 +198,28 @@ int main(void)
   MX_SPDIFRX1_Init();
   MX_SAI3_Init();
   MX_QUADSPI_Init();
-  MX_USB_OTG_FS_PCD_Init();
   MX_TIM6_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
+  HAL_StatusTypeDef result = __Flash.Init(&hqspi, false, FLASH_ADR);
+  __MemStruct.vol1 = 113;
+  __MemStruct.vol2 = 113;
+  __MemStruct.vol3 = 113;
+  __MemStruct.volMaster = 113;
   __Mixer.Initialise();
+
+  if(result == HAL_OK){
+	  __FlashStatus = true;
+	  __FlashManager.Init(&__Flash, FLASH_ADR);
+	  if(false == __FlashManager.Load(&__MemStruct)){
+		  __FlashManager.EraseSectors();
+		  __FlashManager.Save(__MemStruct);
+	  }
+	  __Mixer.setGain1(midiToGain(__MemStruct.vol1));
+	  __Mixer.setGain2(midiToGain(__MemStruct.vol2));
+	  __Mixer.setGain3(midiToGain(__MemStruct.vol3));
+	  __Mixer.setGainMaster(midiToGain(__MemStruct.volMaster));
+  }
 
   __SAI_DIR9001_RX1.Init(&hsai_BlockA2, &__Mixer, __SAI_DIR9001_RX1_Buffer);
   __SAI_DIR9001_RX2.Init(&hsai_BlockA3, &__Mixer, __SAI_DIR9001_RX2_Buffer);
@@ -155,6 +232,7 @@ int main(void)
   __SAI_SPDIF_TX.StartTransmit();
 
   uint8_t ctLed = 0;
+  uint8_t ctFlash = 0;
 
   /* USER CODE END 2 */
 
@@ -196,6 +274,17 @@ int main(void)
 	  }
 	  ctLed++;
 	  if(ctLed == 9) ctLed=0;
+
+	  ctFlash++;
+	  if(ctFlash == 50){
+		  ctFlash = 0;
+		  if((__FlashStatus == true) && (__MemStructChange == true)){
+			  __disable_irq();
+			  __MemStructChange = false;
+			  __enable_irq();
+			  __FlashManager.Save(__MemStruct);
+		  }
+	  }
 	  HAL_Delay(200);
   }
   /* USER CODE END 3 */
@@ -305,10 +394,10 @@ static void MX_QUADSPI_Init(void)
   /* USER CODE END QUADSPI_Init 1 */
   /* QUADSPI parameter configuration*/
   hqspi.Instance = QUADSPI;
-  hqspi.Init.ClockPrescaler = 255;
+  hqspi.Init.ClockPrescaler = 10;
   hqspi.Init.FifoThreshold = 1;
-  hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
-  hqspi.Init.FlashSize = 1;
+  hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_HALFCYCLE;
+  hqspi.Init.FlashSize = 23;
   hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
   hqspi.Init.ClockMode = QSPI_CLOCK_MODE_0;
   hqspi.Init.FlashID = QSPI_FLASH_ID_1;
@@ -343,6 +432,7 @@ static void MX_SAI1_Init(void)
   hsai_BlockA1.Init.AudioMode = SAI_MODEMASTER_TX;
   hsai_BlockA1.Init.Synchro = SAI_ASYNCHRONOUS;
   hsai_BlockA1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
+  hsai_BlockA1.Init.MckOverSampling = SAI_MCK_OVERSAMPLING_DISABLE;
   hsai_BlockA1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
   hsai_BlockA1.Init.AudioFrequency = SAI_AUDIO_FREQUENCY_48K;
   hsai_BlockA1.Init.MonoStereoMode = SAI_STEREOMODE;
@@ -379,6 +469,7 @@ static void MX_SAI2_Init(void)
   hsai_BlockA2.Init.AudioMode = SAI_MODESLAVE_RX;
   hsai_BlockA2.Init.Synchro = SAI_ASYNCHRONOUS;
   hsai_BlockA2.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
+  hsai_BlockA2.Init.MckOverSampling = SAI_MCK_OVERSAMPLING_DISABLE;
   hsai_BlockA2.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
   hsai_BlockA2.Init.SynchroExt = SAI_SYNCEXT_DISABLE;
   hsai_BlockA2.Init.MonoStereoMode = SAI_STEREOMODE;
@@ -413,6 +504,7 @@ static void MX_SAI3_Init(void)
   hsai_BlockA3.Init.AudioMode = SAI_MODESLAVE_RX;
   hsai_BlockA3.Init.Synchro = SAI_ASYNCHRONOUS;
   hsai_BlockA3.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
+  hsai_BlockA3.Init.MckOverSampling = SAI_MCK_OVERSAMPLING_DISABLE;
   hsai_BlockA3.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
   hsai_BlockA3.Init.SynchroExt = SAI_SYNCEXT_DISABLE;
   hsai_BlockA3.Init.MonoStereoMode = SAI_STEREOMODE;
@@ -505,42 +597,6 @@ static void MX_TIM6_Init(void)
 }
 
 /**
-  * @brief USB_OTG_FS Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USB_OTG_FS_PCD_Init(void)
-{
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 0 */
-
-  /* USER CODE END USB_OTG_FS_Init 0 */
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 1 */
-
-  /* USER CODE END USB_OTG_FS_Init 1 */
-  hpcd_USB_OTG_FS.Instance = USB_OTG_FS;
-  hpcd_USB_OTG_FS.Init.dev_endpoints = 9;
-  hpcd_USB_OTG_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_OTG_FS.Init.dma_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_OTG_FS.Init.Sof_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.low_power_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.lpm_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.battery_charging_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.vbus_sensing_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USB_OTG_FS_Init 2 */
-
-  /* USER CODE END USB_OTG_FS_Init 2 */
-
-}
-
-/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -573,8 +629,8 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -644,8 +700,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RESET1_GPIO_Port, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -683,10 +739,21 @@ void MPU_Config(void)
   MPU_InitStruct.BaseAddress = 0x08000000;
   MPU_InitStruct.Size = MPU_REGION_SIZE_2MB;
   MPU_InitStruct.SubRegionDisable = 0x0;
+  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
   MPU_InitStruct.AccessPermission = MPU_REGION_PRIV_RO;
   MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
   MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE;
   MPU_InitStruct.IsCacheable = MPU_ACCESS_CACHEABLE;
+
+  HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+  /** Initializes and configures the Region and the memory to be protected
+  */
+  MPU_InitStruct.Number = MPU_REGION_NUMBER2;
+  MPU_InitStruct.BaseAddress = 0x90000000;
+  MPU_InitStruct.Size = MPU_REGION_SIZE_16MB;
+  MPU_InitStruct.AccessPermission = MPU_REGION_PRIV_RO_URO;
+  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
 
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */
@@ -708,8 +775,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
